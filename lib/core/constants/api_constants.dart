@@ -6,13 +6,16 @@
 /// Jadi [wsUrl] sengaja tidak memakai [apiPrefix]. Jangan "dirapikan"
 /// supaya seragam dengan [baseUrl] — nanti WebSocket-nya justru mati.
 class ApiConstants {
-  /// Host backend (Tailscale server). Satu-satunya tempat yang perlu diubah
-  /// kalau pindah server.
+  /// Host backend. Satu-satunya tempat yang perlu diubah kalau pindah server.
+  ///
+  /// Mode A (dev lokal Windows): pakai `100.76.157.57:8080` (Tailscale IP
+  /// Windows) atau `localhost:8080` kalau emulator di Windows yang sama.
+  /// Mode B (server Tailscale): ganti ke `100.108.2.23:8080`.
   ///
   /// Catatan untuk emulator: Android emulator tidak bisa menjangkau `localhost`
   /// milik host (pakai `10.0.2.2:8080`), tapi karena di sini yang dipakai IP
   /// Tailscale, semua platform memakai host yang sama.
-  static const String host = '100.108.2.23:8080';
+  static const String host = '100.76.157.57:8080';
 
   /// Prefix REST API, sesuai `app.Group("/api/v1")` di main.go:87.
   static const String apiPrefix = '/api/v1';
