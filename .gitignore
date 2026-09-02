@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Catatan kerja internal (tidak di-track)
+/PERBAIKAN_API_*.md
+/TESTING.md
