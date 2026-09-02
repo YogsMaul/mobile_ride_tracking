@@ -3,11 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../../../core/location/location_service.dart';
-import '../../../core/websocket/ws_manager.dart';
-
-final locationServiceProvider = Provider<LocationService>((ref) => LocationService());
-final wsManagerProvider = Provider<WebSocketManager>((ref) => WebSocketManager());
+import '../../../core/location/location_provider.dart';
+import '../../../core/websocket/ws_manager_provider.dart';
 
 class RiderLocation {
   final String userId;
