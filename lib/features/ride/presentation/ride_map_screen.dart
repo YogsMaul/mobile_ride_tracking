@@ -7,6 +7,7 @@ import '../../../core/location/location_provider.dart';
 import '../../../core/websocket/ws_manager_provider.dart';
 
 class RiderLocation {
+
   final String userId;
   final LatLng position;
   final double heading;
