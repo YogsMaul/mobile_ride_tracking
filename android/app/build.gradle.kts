@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.ridetracking.ride_tracking_mobile"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11.x requires compileSdk >= 37 (AGP 9.1.0 supports it).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../storage/secure_storage_service.dart';
 import '../constants/api_constants.dart';
 
 class WebSocketManager {
   WebSocketChannel? _channel;
-  final _storage = const FlutterSecureStorage();
+  final SecureStorageService _storage = const SecureStorageService();
   final _controller = StreamController<Map<String, dynamic>>.broadcast();
   Timer? _reconnectTimer;
   Timer? _pingTimer;
@@ -23,7 +23,7 @@ class WebSocketManager {
     _rideId = rideId;
 
     try {
-      final token = await _storage.read(key: 'access_token');
+      final token = await _storage.getAccessToken();
       final baseWs = rideId != null
           ? '${ApiConstants.wsUrl}/rides/$rideId'
           : ApiConstants.wsUrl;

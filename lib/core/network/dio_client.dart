@@ -1,75 +1,33 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../constants/api_constants.dart';
+import '../storage/secure_storage_service.dart';
+import 'interceptor/auth_interceptor.dart';
 
 class DioClient {
-  late final Dio _dio;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final Dio _dio;
+  final SecureStorageService _storage;
+  AuthExpiredCallback? onAuthExpired;
+  AuthErrorCallback? onAuthError;
 
-  DioClient() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: ApiConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-
+  DioClient([SecureStorageService? storage])
+      : _storage = storage ?? const SecureStorageService(),
+        _dio = Dio(
+          BaseOptions(
+            baseUrl: ApiConstants.baseUrl,
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+            headers: {'Content-Type': 'application/json'},
+          ),
+        ) {
     _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await _storage.read(key: 'access_token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
-        onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
-            final refreshed = await _refreshToken();
-            if (refreshed) {
-              return handler.resolve(await _retry(error.requestOptions));
-            }
-          }
-          handler.next(error);
-        },
+      AuthInterceptor(
+        _storage,
+        onAuthExpired: () => onAuthExpired?.call(),
+        onAuthError: (msg) => onAuthError?.call(msg),
       ),
     );
   }
 
   Dio get instance => _dio;
-
-  Future<bool> _refreshToken() async {
-    try {
-      final refreshToken = await _storage.read(key: 'refresh_token');
-      if (refreshToken == null) return false;
-
-      final response = await _dio.post(
-        ApiConstants.refreshTokenEndpoint,
-        data: {'refresh_token': refreshToken},
-      );
-
-      if (response.statusCode == 200) {
-        await _storage.write(key: 'access_token', value: response.data['access_token']);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
-    final options = Options(
-      method: requestOptions.method,
-      headers: requestOptions.headers,
-    );
-    return _dio.request<dynamic>(
-      requestOptions.path,
-      data: requestOptions.data,
-      queryParameters: requestOptions.queryParameters,
-      options: options,
-    );
-  }
 }
