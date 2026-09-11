@@ -16,38 +16,67 @@ Flutter app untuk ride tracking realtime. Bagian dari monorepo `ride_tracking`.
 ```
 lib/
   main.dart
-  app.dart                          # router, theme, shell 3-tab
+  app.dart                          # root widget, auth gate, MaterialApp
+  routes/
+    app_routes.dart                 # route names + route table + AppShell
   core/
     constants/api_constants.dart    # baseUrl, wsUrl, endpoint list
+    error/
+      app_exception.dart            # AppException + mapping DioException → pesan ID
     network/
-      dio_client.dart               # interceptor + token attach
-      dio_provider.dart
-      user_profile_provider.dart
-      api_error.dart                # apiErrorMessage() + readString()
+      dio_client.dart               # Dio + BaseOptions
+      dio_provider.dart             # dioClientProvider
+      interceptor/
+        auth_interceptor.dart       # token attach + 401 refresh mutex
+      service/
+        auth_service.dart           # raw HTTP endpoint auth
+        ride_service.dart           # raw HTTP endpoint rides
+      repository/
+        auth_repository.dart        # mapping JSON → model + save session
+        ride_repository.dart        # create/join/detail ride
+      models/
+        user_model.dart             # UserModel, AuthResponseModel
+        ride_model.dart             # RideModel (+ displayCode)
     location/
       location_service.dart
       location_provider.dart
+    storage/
+      secure_storage_service.dart   # satu-satunya tempat sentuh secure storage
     websocket/
       ws_manager.dart               # connect/send/stream, backoff
       ws_manager_provider.dart
     theme/
-      app_theme.dart                # AppColors (brand moss green), radius, spacing
+      app_colors.dart               # token warna (brand moss green)
+      app_dimensions.dart           # AppRadius, AppSpacing
+      app_typography.dart           # TextTheme
+      app_theme.dart                # ThemeData light
+    utils/
+      validators.dart               # validasi email/password/required
     widgets/
       app_background.dart           # gradasi mint-sage + topografi vektor
       illustrations.dart            # vektor animasi (History, Profile)
-      shell_scaffold.dart           # bottom nav 3 tab (Beranda, Riwayat, Profil)
+      shell_scaffold.dart           # bottom nav floating 3 tab
   features/
-    auth/presentation/
+    auth/
+      auth_state.dart               # ChangeNotifier sesi + authStateProvider
       login_screen.dart             # scenic bg + card naik animasi pas keyboard
       register_screen.dart          # password strength indicator
       idle_session_modal.dart
-    ride/presentation/
-      home_screen.dart              # spec beranda: hero, callout, 3 action cards
-      ride_map_screen.dart          # fullscreen OpenStreetMap + WS stream
-    history/presentation/
+      widgets/                      # countdown_ring, password_strength_bar
+    ride/
+      ride_state.dart               # ride aktif (RideModel?)
+      home/
+        home_screen.dart            # spec beranda: hero, callout, 3 action cards
+        widgets/                    # header, hero_section, action_cards, join_ride_sheet
+      ride_map/
+        ride_map_screen.dart        # fullscreen OpenStreetMap + WS stream
+        rider_location.dart         # model posisi rider
+        widgets/                    # markers, invite_sheet (QR), bottom_bar
+    history/
       history_screen.dart           # empty state jujur + animasi kompas
-    profile/presentation/
+    profile/
       profile_screen.dart           # info akun + animasi orbit + logout
+      widgets/profile_row.dart
 ```
 
 ## Setup
@@ -72,8 +101,3 @@ lib/
 - REST: `/api/v1/...` (lihat `api_constants.dart`)
 - WebSocket: `/ws/rides/:id` (no prefix)
 - Auth: `Authorization: Bearer <access_token>` (no refresh token)
-
-## Dokumentasi Tambahan
-- `DESIGN.md`: Panduan design system, color token, hierarki layout, dan ilustrasi vektor
-- `TESTING.md`: Panduan testing end-to-end (login, create, join, live tracking)
-- `docs/PERBAIKAN_API_2026-09-02.md`: Catatan perbaikan kontrak API historis
