@@ -3,17 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app_lifecycle.dart';
 import 'core/network/dio_provider.dart';
-import 'core/theme/app_theme.dart';
 import 'core/network/repository/auth_repository.dart';
+import 'core/theme/app_theme.dart';
+import 'core/widgets/app_toast.dart';
 import 'features/auth/auth_state.dart';
 import 'features/auth/idle_session_modal.dart';
 import 'features/auth/login_screen.dart';
 import 'routes/app_routes.dart';
 
-/// Global messenger — dipakai [LoginScreen] / [RegisterScreen] buat
-/// show snackbar success yang "nge-stick" ke root, gak yatim meskipun
-/// halaman auth di-pop navigasi ke /home.
-final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+/// Global navigator — dipakai buat akses context dari luar widget tree
+/// (mis. callback onAuthError dari Dio interceptor).
+final navigatorKey = GlobalKey<NavigatorState>();
 
 class RideTrackingApp extends ConsumerStatefulWidget {
   const RideTrackingApp({super.key, required this.lifecycle});
@@ -31,17 +31,8 @@ class _RideTrackingAppState extends ConsumerState<RideTrackingApp> {
     final auth = ref.read(authStateProvider);
     dio.onAuthExpired = auth.onLogout;
     dio.onAuthError = (message) {
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text(message)),
-            ],
-          ),
-        ),
-      );
+      final ctx = navigatorKey.currentContext;
+      if (ctx != null) AppToast.error(ctx, message);
     };
   }
 
@@ -51,7 +42,7 @@ class _RideTrackingAppState extends ConsumerState<RideTrackingApp> {
       title: 'Ride Tracking',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      scaffoldMessengerKey: scaffoldMessengerKey,
+      navigatorKey: navigatorKey,
       initialRoute: AppRoutes.initial,
       routes: AppRoutes.routes,
       home: const _AuthGate(),

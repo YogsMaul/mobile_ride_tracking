@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app.dart';
 import '../../core/error/app_exception.dart';
 import '../../core/network/repository/auth_repository.dart';
+import '../../core/network/service/google_auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/app_background.dart';
+import '../../core/widgets/app_toast.dart';
 import './auth_state.dart';
 import 'widgets/password_strength_bar.dart';
 
@@ -45,8 +46,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    final messenger = scaffoldMessengerKey.currentState ??
-        ScaffoldMessenger.of(context);
 
     setState(() => _isLoading = true);
     try {
@@ -59,44 +58,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       if (!mounted) return;
       setState(() => _success = true);
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 18),
-              SizedBox(width: 10),
-              Expanded(child: Text('Registrasi berhasil.')),
-            ],
-          ),
-          duration: Duration(milliseconds: 1200),
-        ),
-      );
+      AppToast.success(context, 'Registrasi berhasil.', 1200);
       await Future.delayed(const Duration(milliseconds: 1200));
       ref.read(authStateProvider).onLoginSuccess();
     } on AppException catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text(e.message)),
-            ],
-          ),
-        ),
-      );
+      if (mounted) AppToast.error(context, e.message);
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text('Terjadi kesalahan: $e')),
-            ],
-          ),
-        ),
-      );
+      if (mounted) AppToast.error(context, 'Terjadi kesalahan: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final googleService = ref.read(googleAuthServiceProvider);
+      final idToken = await googleService.signInAndGetIdToken();
+      if (idToken == null) {
+        // User cancel dialog Google Sign-In
+        return;
+      }
+
+      final repo = ref.read(authRepositoryProvider);
+      await repo.loginWithGoogle(idToken: idToken);
+
+      if (!mounted) return;
+      setState(() => _success = true);
+      AppToast.success(context, 'Pendaftaran Google berhasil.', 1200);
+      await Future.delayed(const Duration(milliseconds: 1200));
+      ref.read(authStateProvider).onLoginSuccess();
+    } on AppException catch (e) {
+      if (mounted) AppToast.error(context, e.message);
+    } catch (e) {
+      if (mounted) AppToast.error(context, 'Login Google gagal: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -256,6 +251,59 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                             ],
                                           )
                                         : const Text('Daftar Akun'),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              // Divider "atau"
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                    ),
+                                    child: Text(
+                                      'atau',
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              OutlinedButton(
+                                onPressed: (_isLoading || _success)
+                                    ? null
+                                    : _signInWithGoogle,
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.lg),
+                                  ),
+                                  side: const BorderSide(
+                                    color: AppColors.line,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.g_mobiledata_rounded,
+                                      size: 26,
+                                      color: AppColors.brand,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Lanjutkan dengan Google',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

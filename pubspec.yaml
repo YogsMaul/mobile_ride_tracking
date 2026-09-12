@@ -41,10 +41,10 @@ dependencies:
   latlong2: ^0.10.1
   geolocator: ^14.0.3
   flutter_secure_storage: ^11.0.0
+  google_sign_in: ^6.2.1
   intl: ^0.20.3
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.0
-  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:
@@ -56,10 +56,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  riverpod_generator: ^2.6.5
-  build_runner: ^2.5.4
-  riverpod_lint: ^2.6.5
-  custom_lint: ^0.7.6
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,6 +72,9 @@ flutter:
   assets:
     - assets/backgroud_login.png
     - assets/background_beranda.png
+    - assets/background_history.png
+    - assets/background_profile.png
+    - assets/logo_ride_tracking.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

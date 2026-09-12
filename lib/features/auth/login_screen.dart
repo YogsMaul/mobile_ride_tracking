@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app.dart';
 import '../../core/error/app_exception.dart';
 import '../../core/network/repository/auth_repository.dart';
+import '../../core/network/service/google_auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/validators.dart';
+import '../../core/widgets/app_toast.dart';
 import './auth_state.dart';
 
 
@@ -33,8 +34,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    final messenger = scaffoldMessengerKey.currentState ??
-        ScaffoldMessenger.of(context);
 
     setState(() => _isLoading = true);
     try {
@@ -46,44 +45,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _success = true);
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 18),
-              SizedBox(width: 10),
-              Expanded(child: Text('Login berhasil.')),
-            ],
-          ),
-          duration: Duration(milliseconds: 1200),
-        ),
-      );
+      AppToast.success(context, 'Login berhasil.', 1200);
       await Future.delayed(const Duration(milliseconds: 1200));
       ref.read(authStateProvider).onLoginSuccess();
     } on AppException catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text(e.message)),
-            ],
-          ),
-        ),
-      );
+      if (mounted) AppToast.error(context, e.message);
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text('Terjadi kesalahan: $e')),
-            ],
-          ),
-        ),
-      );
+      if (mounted) AppToast.error(context, 'Terjadi kesalahan: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final googleService = ref.read(googleAuthServiceProvider);
+      final idToken = await googleService.signInAndGetIdToken();
+      if (idToken == null) {
+        // User cancel dialog Google Sign-In
+        return;
+      }
+
+      final repo = ref.read(authRepositoryProvider);
+      await repo.loginWithGoogle(idToken: idToken);
+
+      if (!mounted) return;
+      setState(() => _success = true);
+      AppToast.success(context, 'Login Google berhasil.', 1200);
+      await Future.delayed(const Duration(milliseconds: 1200));
+      ref.read(authStateProvider).onLoginSuccess();
+    } on AppException catch (e) {
+      if (mounted) AppToast.error(context, e.message);
+    } catch (e) {
+      if (mounted) AppToast.error(context, 'Login Google gagal: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -125,19 +120,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               width: 84,
                               height: 84,
                               decoration: BoxDecoration(
-                                color: AppColors.brand,
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.brand
-                                        .withValues(alpha: 0.28),
-                                    blurRadius: 20,
+                                    color: AppColors.brandDark
+                                        .withValues(alpha: 0.22),
+                                    blurRadius: 18,
                                     offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
-                              child: const Icon(Icons.route,
-                                  color: Colors.white, size: 42),
+                              clipBehavior: Clip.antiAlias,
+                              child: Image.asset(
+                                'assets/logo_ride_tracking.png',
+                                fit: BoxFit.cover,
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.lg),
                             Text(
@@ -254,8 +251,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                                         validator: (v) => AppValidators.requiredField(v, 'Password'),
                                       ),
-                                      const SizedBox(
-                                          height: AppSpacing.xl),
+                                      const SizedBox(height: 4),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: TextButton(
+                                          onPressed: _isLoading
+                                              ? null
+                                              : () => Navigator.pushNamed(
+                                                  context,
+                                                  '/forgot-password',
+                                                ),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                              vertical: 2,
+                                            ),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize:
+                                                MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            'Lupa password?',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: AppColors.brand,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.lg),
                                       FilledButton(
                                         onPressed: (_isLoading || _success)
                                             ? null
@@ -325,6 +352,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             child: Divider(),
                                           ),
                                         ],
+                                      ),
+                                      const SizedBox(height: AppSpacing.md),
+                                      OutlinedButton(
+                                        onPressed: (_isLoading || _success)
+                                            ? null
+                                            : _signInWithGoogle,
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(AppRadius.lg),
+                                          ),
+                                          side: const BorderSide(
+                                            color: AppColors.line,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.g_mobiledata_rounded,
+                                              size: 26,
+                                              color: AppColors.brand,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Lanjutkan dengan Google',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelLarge
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                       const SizedBox(height: AppSpacing.sm),
                                       Row(

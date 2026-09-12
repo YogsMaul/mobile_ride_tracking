@@ -29,6 +29,7 @@ class ApiConstants {
 
   // --- Auth — main.go:90-97 ---
   static const String loginEndpoint = '/auth/login';
+  static const String googleLoginEndpoint = '/auth/google';
   static const String registerEndpoint = '/auth/register';
   static const String forgotPasswordEndpoint = '/auth/forgot-password';
   static const String verifyOtpEndpoint = '/auth/verify-otp';
@@ -43,27 +44,22 @@ class ApiConstants {
   static const String createRideEndpoint = '/rides';
   static const String joinRideEndpoint = '/rides/join';
 
+  /// `rides.Get("/me", ...)` — list semua ride dimana user jadi member.
+  /// Daftarkan SEBELUM `/:id` di main.go supaya gak tertangkap param parser.
+  /// Query param opsional: ?status=completed,cancelled&limit=50&offset=0
+  static const String myRidesEndpoint = '/rides/me';
+
   static String rideDetailEndpoint(String rideId) => '/rides/$rideId';
   static String startRideEndpoint(String rideId) => '/rides/$rideId/start';
+  static String endRideEndpoint(String rideId) => '/rides/$rideId/end';
+  static String cancelRideEndpoint(String rideId) => '/rides/$rideId/cancel';
+  static String leaveRideEndpoint(String rideId) => '/rides/$rideId/leave';
 
   // --- Belum ada di backend ---
-  // Route berikut BELUM didaftarkan di main.go. Jangan dipakai untuk fitur
-  // baru sebelum backend-nya ada, dan jangan diam-diam di-fallback ke data
-  // dummy kalau gagal — tampilkan state kosong yang jujur.
-  //
-  //   /rides/leave  -> tidak ada sama sekali (konstanta lamanya sudah dihapus
-  //                    karena tidak dipakai di mana pun)
+  // Route berikut SUDAH diimplementasi di main.go (Phase 2 audit 2026-09-12).
+  // Konstanta lama `rideHistoryEndpoint` diganti `myRidesEndpoint` di atas.
 
-  /// BELUM ADA DI BACKEND — sengaja tidak dipanggil dari mana pun.
-  ///
-  /// Hati-hati: path ini TIDAK membalas 404. `rides.Get("/:id", ...)` di
-  /// main.go:101 menangkapnya sebagai ride dengan id `"history"`, jadi backend
-  /// membalas `400 {"error":"invalid ride id"}`. Kalau nanti route riwayat
-  /// dibuat, daftarkan sebelum `/:id` atau pakai path lain (mis. `/me/rides`).
-  static const String rideHistoryEndpoint = '/rides/history';
-
-  /// BELUM ADA DI BACKEND, dan login pun tidak pernah mengeluarkan
-  /// `refresh_token`. Interceptor 401 di DioClient otomatis berhenti karena
-  /// tidak ada refresh token yang tersimpan, jadi ini tidak pernah kepanggil.
+  /// Refresh token endpoint — backend supports rotation via Redis.
+  /// Mobile interceptor belum pakai (auto-logout on 401).
   static const String refreshTokenEndpoint = '/auth/refresh';
 }

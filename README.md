@@ -54,13 +54,14 @@ lib/
       validators.dart               # validasi email/password/required
     widgets/
       app_background.dart           # gradasi mint-sage + topografi vektor
-      illustrations.dart            # vektor animasi (History, Profile)
+      app_toast.dart                # toast custom muncul dari atas
       shell_scaffold.dart           # bottom nav floating 3 tab
   features/
     auth/
       auth_state.dart               # ChangeNotifier sesi + authStateProvider
       login_screen.dart             # scenic bg + card naik animasi pas keyboard
       register_screen.dart          # password strength indicator
+      forgot_password_screen.dart   # wizard 3-step: email -> OTP -> reset password
       idle_session_modal.dart
       widgets/                      # countdown_ring, password_strength_bar
     ride/

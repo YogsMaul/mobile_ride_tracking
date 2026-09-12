@@ -9,6 +9,7 @@ import '../../../core/location/location_provider.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/websocket/ws_manager_provider.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../ride_state.dart';
 import 'rider_location.dart';
 import 'widgets/ride_bottom_bar.dart';
@@ -49,7 +50,11 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
 
   @override
   void dispose() {
-    _rideNotifier.clear();
+    // Riverpod melarang mutasi provider saat widget tree di-finalize
+    // (dispose termasuk). Delay ke microtask = jalan setelah frame selesai.
+    // Tetap menjamin semua exit path (back, leave, pop) membersihkan
+    // ride aktif.
+    Future.microtask(_rideNotifier.clear);
     super.dispose();
   }
 
@@ -62,13 +67,10 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     final hasPermission = await locationService.checkPermission();
     if (!hasPermission) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Lokasi belum aktif. Hidupkan GPS & izinkan lokasi, '
-              'lalu masuk ulang ride.',
-            ),
-          ),
+        AppToast.info(
+          context,
+          'Lokasi belum aktif. Hidupkan GPS & izinkan lokasi, '
+          'lalu masuk ulang ride.',
         );
       }
       return;
