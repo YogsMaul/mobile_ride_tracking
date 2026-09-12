@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/app_lifecycle.dart';
@@ -8,6 +9,7 @@ import 'features/auth/auth_state.dart';
 void main() async {
   // Pastikan plugin (flutter_secure_storage) siap sebelum runApp.
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
 
   // Container sementara untuk bootstrap auth — butuh ref untuk baca provider
   // tapi belum ada ProviderScope. Trik: bikin container sekali, ambil instance,

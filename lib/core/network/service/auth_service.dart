@@ -21,6 +21,15 @@ class AuthService {
     );
   }
 
+  Future<Response> googleLogin({
+    required String idToken,
+  }) async {
+    return await dio.post(
+      ApiConstants.googleLoginEndpoint,
+      data: {'id_token': idToken},
+    );
+  }
+
   Future<Response> register({
     required String name,
     required String email,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/auth/forgot_password_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/history/history_screen.dart';
@@ -14,12 +15,14 @@ class AppRoutes {
   static const String initial = '/';
   static const String login = '/login';
   static const String register = '/register';
+  static const String forgotPassword = '/forgot-password';
   static const String home = '/home';
   static const String ride = '/ride';
 
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
         register: (context) => const RegisterScreen(),
+        forgotPassword: (context) => const ForgotPasswordScreen(),
         home: (context) => const AppShell(),
         ride: (context) {
           final args = ModalRoute.of(context)!.settings.arguments

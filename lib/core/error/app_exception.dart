@@ -29,8 +29,9 @@ class AppException implements Exception {
 
     final data = error.response?.data;
     if (data is Map && data['error'] is String) {
+      final rawError = data['error'] as String;
       return AppException(
-        data['error'] as String,
+        _translateError(rawError),
         statusCode: error.response?.statusCode,
       );
     }
@@ -57,5 +58,45 @@ class AppException implements Exception {
     return AppException(
       error != null ? 'Terjadi kesalahan: $error' : 'Terjadi kesalahan tak terduga.',
     );
+  }
+}
+
+/// Translate leftover English error messages from backend/header
+/// to Indonesian, so users never see raw technical English.
+String _translateError(String raw) {
+  final lower = raw.toLowerCase().trim();
+  switch (lower) {
+    case 'invalid credentials':
+      return 'Email atau password salah';
+    case 'invalid request body':
+      return 'Format data tidak valid';
+    case 'email and password are required':
+      return 'Email dan password wajib diisi';
+    case 'email, password, and name are required':
+      return 'Email, password, dan nama wajib diisi';
+    case 'invalid email format':
+      return 'Format email tidak valid';
+    case 'password must be at least 8 characters and contain uppercase, lowercase, and digit':
+      return 'Password minimal 8 karakter, harus ada huruf besar, huruf kecil, dan angka';
+    case 'email already exists':
+      return 'Email sudah terdaftar';
+    case 'failed to fetch user':
+      return 'Gagal mengambil data pengguna';
+    case 'failed to generate token':
+      return 'Gagal membuat sesi login';
+    case 'failed to create user':
+      return 'Gagal membuat akun';
+    case 'failed to hash password':
+      return 'Gagal memproses password';
+    case 'unauthorized':
+      return 'Sesi berakhir. Silakan login ulang';
+    case 'invalid or expired refresh token':
+      return 'Sesi login kadaluarsa. Silakan login ulang';
+    case 'refresh token service unavailable':
+      return 'Layanan refresh sesi tidak tersedia';
+    case 'refresh_token is required':
+      return 'Refresh token wajib diisi';
+    default:
+      return raw; // unknown — show as-is
   }
 }

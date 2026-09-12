@@ -5,6 +5,7 @@ import '../../error/app_exception.dart';
 import '../dio_provider.dart';
 import '../models/ride_model.dart';
 import '../service/ride_service.dart';
+import '../../../features/history/ride_history_item.dart';
 
 class RideRepository {
   final RideService service;
@@ -61,6 +62,52 @@ class RideRepository {
   Future<void> startRide(String rideId) async {
     try {
       await service.startRide(rideId);
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// GET /rides/me — ambil riwayat ride user.
+  /// Backend mengembalikan array MyRideSummary yang sudah termasuk
+  /// participant_count dan role (host/joined).
+  Future<List<RideHistoryItem>> getMyRides({String? status}) async {
+    try {
+      final response = await service.getMyRides(status: status);
+      final data = response.data;
+      if (data is! List) {
+        return [];
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map((json) => RideHistoryItem.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// POST /rides/:id/end — owner selesaikan ride.
+  Future<void> endRide(String rideId) async {
+    try {
+      await service.endRide(rideId);
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// POST /rides/:id/cancel — owner batalkan ride.
+  Future<void> cancelRide(String rideId) async {
+    try {
+      await service.cancelRide(rideId);
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// DELETE /rides/:id/leave — member keluar dari ride.
+  Future<void> leaveRide(String rideId) async {
+    try {
+      await service.leaveRide(rideId);
     } on DioException catch (e) {
       throw AppException.fromDio(e);
     }

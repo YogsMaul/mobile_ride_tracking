@@ -5,6 +5,7 @@ import '../../../core/error/app_exception.dart';
 import '../../../core/network/models/ride_model.dart';
 import '../../../core/network/repository/ride_repository.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../ride_state.dart';
 import 'widgets/home_action_cards.dart';
 import 'widgets/home_header.dart';
@@ -23,43 +24,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _busy = false;
 
   Future<void> _createRide() async {
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
     try {
       final repo = ref.read(rideRepositoryProvider);
       final ride = await repo.createRide();
 
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_outline,
-                  color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  ride.name != null && ride.name!.isNotEmpty
-                      ? 'Ride "${ride.name}" dibuat! Kode: ${ride.displayCode}'
-                      : 'Ride dibuat! Kode: ${ride.displayCode}',
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      if (mounted) {
+        final label = ride.name != null && ride.name!.isNotEmpty
+            ? 'Ride "${ride.name}" dibuat! Kode: ${ride.displayCode}'
+            : 'Ride dibuat! Kode: ${ride.displayCode}';
+        AppToast.success(context, label);
+      }
 
       _openRide(ride.id, ride.inviteCode, ride.name);
     } on AppException catch (e) {
-      messenger.showSnackBar(_errorSnack('Gagal membuat ride', e));
+      if (mounted) AppToast.error(context, 'Gagal membuat ride: ${e.message}');
     } catch (e) {
-      messenger.showSnackBar(_errorSnack('Gagal membuat ride', e));
+      if (mounted) AppToast.error(context, 'Gagal membuat ride: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _showJoinDialog() async {
-    final messenger = ScaffoldMessenger.of(context);
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -79,9 +66,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final ride = await repo.joinRide(inviteCode: code);
       _openRide(ride.id, ride.inviteCode, ride.name);
     } on AppException catch (e) {
-      messenger.showSnackBar(_errorSnack('Gagal join ride', e));
+      if (mounted) AppToast.error(context, 'Gagal join ride: ${e.message}');
     } catch (e) {
-      messenger.showSnackBar(_errorSnack('Gagal join ride', e));
+      if (mounted) AppToast.error(context, 'Gagal join ride: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -119,19 +106,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Mengerti'),
           ),
-        ],
-      ),
-    );
-  }
-
-  SnackBar _errorSnack(String prefix, Object e) {
-    final msg = e is AppException ? e.message : 'Terjadi kesalahan tak terduga.';
-    return SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
-          Expanded(child: Text('$prefix: $msg')),
         ],
       ),
     );

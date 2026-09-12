@@ -28,6 +28,14 @@ class AuthRepository {
         fallback: 'Login gagal.',
       );
 
+  Future<AuthSession> loginWithGoogle({
+    required String idToken,
+  }) =>
+      _authenticate(
+        () => service.googleLogin(idToken: idToken),
+        fallback: 'Login Google gagal.',
+      );
+
   Future<AuthSession> register({
     required String name,
     required String email,
@@ -50,6 +58,48 @@ class AuthRepository {
         throw const AppException('Data profil tidak lengkap.');
       }
       return user;
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// Request OTP forgot password. Return OTP jika server mengirimkan
+  /// (mode dev/demo — lihat auth_handler.go:380).
+  Future<String?> requestPasswordReset({required String email}) async {
+    try {
+      final response = await service.forgotPassword(email: email);
+      final data = response.data;
+      if (data is Map && data['otp'] is String) {
+        return data['otp'] as String;
+      }
+      return null;
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  Future<void> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      await service.verifyOtp(email: email, otp: otp);
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      await service.resetPassword(
+        email: email,
+        otp: otp,
+        newPassword: newPassword,
+      );
     } on DioException catch (e) {
       throw AppException.fromDio(e);
     }
