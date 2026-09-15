@@ -62,4 +62,32 @@ class RideService {
   Future<Response> leaveRide(String rideId) async {
     return await dio.delete(ApiConstants.leaveRideEndpoint(rideId));
   }
+
+  /// GET /rides/:id/trail — daftar koordinat GPS rute (maks 300 titik).
+  Future<Response> getRideTrail(String rideId) async {
+    return await dio.get(ApiConstants.rideTrailEndpoint(rideId));
+  }
+
+  /// GET /rides/:id/members — daftar peserta konvoi (host + members).
+  Future<Response> getRideMembers(String rideId) async {
+    return await dio.get(ApiConstants.rideMembersEndpoint(rideId));
+  }
+
+  /// PATCH /rides/:id/destination — set titik tujuan (owner only).
+  Future<Response> setDestination({
+    required String rideId,
+    required String name,
+    required double lat,
+    required double lng,
+  }) async {
+    return await dio.patch(
+      ApiConstants.rideDestinationEndpoint(rideId),
+      data: {'name': name, 'lat': lat, 'lng': lng},
+    );
+  }
+
+  /// DELETE /rides/:id/destination — hapus titik tujuan (owner only).
+  Future<Response> clearDestination(String rideId) async {
+    return await dio.delete(ApiConstants.rideDestinationEndpoint(rideId));
+  }
 }

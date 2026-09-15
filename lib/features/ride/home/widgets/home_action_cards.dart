@@ -3,12 +3,19 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class HomePrimaryCard extends StatelessWidget {
-  const HomePrimaryCard({super.key, this.onTap});
+  const HomePrimaryCard({
+    super.key,
+    this.onTap,
+    this.activeRideName,
+  });
+
   final VoidCallback? onTap;
+  final String? activeRideName;
 
   @override
   Widget build(BuildContext context) {
     final disabled = onTap == null;
+    final isActive = activeRideName != null && activeRideName!.isNotEmpty;
     return Opacity(
       opacity: disabled ? 0.5 : 1.0,
       child: Material(
@@ -30,8 +37,10 @@ class HomePrimaryCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.add_location_alt_outlined,
+                  child: Icon(
+                    isActive
+                        ? Icons.motorcycle_rounded
+                        : Icons.add_location_alt_outlined,
                     color: Colors.white,
                     size: 24,
                   ),
@@ -43,7 +52,9 @@ class HomePrimaryCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Mulai ride',
+                        isActive ? activeRideName! : 'Mulai ride',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontSize: 14.5,
@@ -53,7 +64,9 @@ class HomePrimaryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        'Jadi host, undang teman via QR atau kode.',
+                        isActive
+                            ? 'Room masih aktif • Ketuk untuk kembali'
+                            : 'Jadi host, undang teman via QR atau kode.',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(

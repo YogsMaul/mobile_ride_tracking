@@ -12,12 +12,22 @@ class GoogleAuthService {
   GoogleAuthService({GoogleSignIn? googleSignIn})
       : _googleSignIn = googleSignIn ??
             GoogleSignIn(
+              serverClientId:
+                  '329486187244-gho6hsd1othl18ejq82gk2joqs6omc9h.apps.googleusercontent.com',
               scopes: ['email', 'profile'],
             );
 
   /// Buka sheet picker Google, dapatkan `id_token` buat ditukar di backend.
   /// Return `null` kalau user batal pilih akun.
   Future<String?> signInAndGetIdToken() async {
+    // PENTING: signOut DULU biar Google selalu nampilin layar "Choose an account".
+    // Tanpa ini, Google auto-login ke akun terakhir yang tersimpan di Play Services,
+    // jadi user gak bisa ganti akun.
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {
+      // Abaikan kalau belum pernah sign-in
+    }
     final account = await _googleSignIn.signIn();
     if (account == null) return null;
     final auth = await account.authentication;

@@ -18,25 +18,41 @@ class WebSocketManager {
   Stream<Map<String, dynamic>> get stream => _controller.stream;
 
   Future<void> connect({String? rideId}) async {
+    final effectiveRideId =
+        (rideId != null && rideId.trim().isNotEmpty) ? rideId.trim() : _rideId;
+
+    if (effectiveRideId == null || effectiveRideId.isEmpty) {
+      // Backend hanya menerima koneksi dengan ID ride: /ws/rides/:id
+      // Mencegah koneksi tanpa rideId yang menyebabkan 404 /ws
+      return;
+    }
+
     if (_isConnecting || _channel != null) return;
     _isConnecting = true;
-    _rideId = rideId;
+    _rideId = effectiveRideId;
 
     try {
       final token = await _storage.getAccessToken();
-      final baseWs = rideId != null
-          ? '${ApiConstants.wsUrl}/rides/$rideId'
-          : ApiConstants.wsUrl;
-      final uri = Uri.parse(baseWs);
-      
+      final targetWs = '${ApiConstants.wsUrl}/rides/$effectiveRideId';
+      final uri = Uri.parse(targetWs);
+
       _channel = WebSocketChannel.connect(uri);
-      
+
       send({'type': 'auth', 'token': token});
-      
+
       _channel!.stream.listen(
         (message) {
-          final data = jsonDecode(message as String) as Map<String, dynamic>;
-          _controller.add(data);
+          // Backend menggabungkan beberapa pesan dalam satu frame,
+          // dipisah newline (lihat WritePump hub.go) — decode per baris.
+          for (final line in const LineSplitter().convert(message as String)) {
+            if (line.trim().isEmpty) continue;
+            try {
+              final data = jsonDecode(line) as Map<String, dynamic>;
+              _controller.add(data);
+            } catch (_) {
+              // Skip baris korup, jangan matikan koneksi.
+            }
+          }
           _reconnectAttempts = 0;
         },
         onError: (_) => _reconnect(),
@@ -61,13 +77,31 @@ class WebSocketManager {
   void _reconnect() {
     _channel = null;
     _reconnectTimer?.cancel();
-    
+    _pingTimer?.cancel();
+
+    if (_rideId == null || _rideId!.isEmpty) return;
+
     _reconnectAttempts++;
     final delaySeconds = min(pow(2, _reconnectAttempts - 1).toInt() * 2, 60);
     final jitter = Random().nextInt(1000);
     final delay = Duration(seconds: delaySeconds, milliseconds: jitter);
-    
-    _reconnectTimer = Timer(delay, connect);
+
+    _reconnectTimer = Timer(delay, () => connect(rideId: _rideId));
+  }
+
+  /// Memutuskan koneksi aktif dan membersihkan timer (ping & reconnect).
+  /// Controller stream tetap dibiarkan terbuka agar dapat digunakan kembali
+  /// untuk sesi ride berikutnya.
+  void disconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _pingTimer?.cancel();
+    _pingTimer = null;
+    _channel?.sink.close();
+    _channel = null;
+    _isConnecting = false;
+    _rideId = null;
+    _reconnectAttempts = 0;
   }
 
   void dispose() {

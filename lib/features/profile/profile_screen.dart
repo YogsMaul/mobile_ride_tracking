@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/error/app_exception.dart';
 import '../../core/network/repository/auth_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_toast.dart';
@@ -49,7 +50,11 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       const ProfileHeader(),
                       const SizedBox(height: 6),
-                      ProfileHero(name: name, role: role),
+                      ProfileHero(
+                        name: name,
+                        role: role,
+                        onEditName: () => _showEditNameDialog(context, ref, name),
+                      ),
                       const SizedBox(height: 8),
                       const ProfileStats(),
                       const SizedBox(height: 8),
@@ -66,6 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.person_outline_rounded,
                         label: 'Nama',
                         value: name,
+                        onTap: () => _showEditNameDialog(context, ref, name),
                       ),
                       const SizedBox(height: 4),
                       AccountInfoCard(
@@ -115,6 +121,100 @@ class ProfileScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Dialog "Ubah Nama" — kirim PATCH /auth/me, refresh profil, toast sukses.
+  Future<void> _showEditNameDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+  ) async {
+    final controller = TextEditingController(text: currentName);
+    var isSaving = false;
+
+    Future<void> submit(
+      BuildContext ctx,
+      void Function(void Function()) setDialogState,
+    ) async {
+      final newName = controller.text.trim();
+      if (newName.length < 2) {
+        AppToast.error(ctx, 'Nama minimal 2 karakter ya.');
+        return;
+      }
+      setDialogState(() => isSaving = true);
+      try {
+        await ref.read(authRepositoryProvider).updateName(newName);
+        ref.invalidate(userProfileProvider);
+        if (ctx.mounted) Navigator.pop(ctx, true);
+      } on AppException catch (e) {
+        setDialogState(() => isSaving = false);
+        if (ctx.mounted) {
+          AppToast.error(ctx, e.message);
+        }
+      } catch (_) {
+        setDialogState(() => isSaving = false);
+        if (ctx.mounted) {
+          AppToast.error(ctx, 'Gagal menyimpan nama. Coba lagi.');
+        }
+      }
+    }
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text('Ubah Nama'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            maxLength: 60,
+            decoration: const InputDecoration(
+              labelText: 'Nama tampilan',
+              hintText: 'Cth: Neko Reii',
+              counterText: '',
+            ),
+            onSubmitted: (_) {
+              if (!isSaving) submit(ctx, setDialogState);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.brand,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed:
+                  isSaving ? null : () => submit(ctx, setDialogState),
+              child: isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Simpan'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    controller.dispose();
+    if (saved == true && context.mounted) {
+      AppToast.success(context, 'Nama berhasil diperbarui.');
+    }
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {

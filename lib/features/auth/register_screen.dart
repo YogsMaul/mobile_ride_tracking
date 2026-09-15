@@ -311,24 +311,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Sudah punya akun?',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.muted,
-                                  ),
-                        ),
-                        TextButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => Navigator.pop(context),
-                          child: const Text('Masuk di sini'),
-                        ),
-                      ],
-                    ),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            'Sudah punya akun?',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.muted,
+                                ),
+                          ),
+                          TextButton(
+                            onPressed:
+                                _isLoading ? null : () => Navigator.pop(context),
+                            child: const Text('Masuk di sini'),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

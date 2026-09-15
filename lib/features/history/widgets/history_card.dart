@@ -221,10 +221,20 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = status == RideStatus.completed;
-    final bg = isCompleted ? AppColors.brandSoft : AppColors.warnFill;
-    final fg = isCompleted ? AppColors.brand : AppColors.warn;
-    final label = isCompleted ? 'Selesai' : 'Dibatalkan';
+    final (bg, fg, label) = switch (status) {
+      RideStatus.completed => (AppColors.brandSoft, AppColors.brand, 'Selesai'),
+      RideStatus.active => (
+          const Color(0xFFFEF3E2),
+          AppColors.accent,
+          'Berjalan',
+        ),
+      RideStatus.planned => (
+          AppColors.infoFill,
+          AppColors.info,
+          'Direncanakan',
+        ),
+      RideStatus.cancelled => (AppColors.warnFill, AppColors.warn, 'Dibatalkan'),
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

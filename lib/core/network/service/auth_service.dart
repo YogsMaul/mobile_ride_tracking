@@ -45,6 +45,13 @@ class AuthService {
     return await dio.get(ApiConstants.meEndpoint);
   }
 
+  Future<Response> updateMe({required String name}) async {
+    return await dio.patch(
+      ApiConstants.meEndpoint,
+      data: {'name': name},
+    );
+  }
+
   Future<Response> logout() async {
     return await dio.post(ApiConstants.logoutEndpoint);
   }

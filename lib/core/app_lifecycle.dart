@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../features/auth/auth_state.dart';
 
-/// Idle thresholds. Dipakai juga oleh idle modal (countdown).
+/// Idle thresholds. Disesuaikan agar ramah pengguna mobile ride tracking
+/// (bukan mobile banking agresif), sesi tetap terjaga saat app di latar belakang.
 class IdleConfig {
-  /// < durasi ini = silent (gak ngapa-ngapain, token masih hidup).
-  static const Duration grace = Duration(minutes: 2);
+  /// < durasi ini = silent (gak ngapa-ngapain, token tetap aktif).
+  static const Duration grace = Duration(minutes: 15);
 
-  /// Antara grace dan hard = idle warning, munculin modal konfirmasi.
-  static const Duration warnAfter = Duration(minutes: 5);
+  /// Antara grace dan hard = idle warning, munculin modal konfirmasi (30 menit).
+  static const Duration warnAfter = Duration(minutes: 30);
 
-  /// > hard = auto logout, sesi dianggap berakhir.
-  static const Duration hardLogoutAfter = Duration(minutes: 15);
+  /// > hard = auto logout jika app ditinggal sangat lama (24 jam / 1 hari).
+  static const Duration hardLogoutAfter = Duration(hours: 24);
 
-  /// Countdown modal: user punya waktu ini buat klik "Lanjutkan".
-  static const Duration modalCountdown = Duration(seconds: 30);
+  /// Countdown modal: waktu toleransi sebelum auto logout saat modal tampil (60 detik).
+  static const Duration modalCountdown = Duration(seconds: 60);
 }
 
 /// Pasang di main.dart. Track app paused/inactive/hidden → simpan timestamp.

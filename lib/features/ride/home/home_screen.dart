@@ -23,16 +23,93 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _busy = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _restoreActiveRide();
+  }
+
+  /// Pulihkan ride planned/active dari server — misal setelah app ditutup
+  /// total, provider state hilang tapi user masih member room di backend.
+  Future<void> _restoreActiveRide() async {
+    if (ref.read(rideStateProvider) != null) return;
+    try {
+      final repo = ref.read(rideRepositoryProvider);
+      final rides = await repo.getMyRides(status: 'planned,active', limit: 1);
+      if (rides.isEmpty || !mounted) return;
+      final r = rides.first;
+      ref.read(rideStateProvider.notifier).setActive(
+            RideModel(id: r.id, name: r.title, status: r.status.name),
+          );
+    } catch (_) {
+      // Offline / gagal — banner memang tidak perlu tampil.
+    }
+  }
+
+  void _backToRide() {
+    final ride = ref.read(rideStateProvider);
+    if (ride == null) return;
+    Navigator.pushNamed(context, '/ride', arguments: {
+      'rideId': ride.id,
+      'inviteCode': ride.inviteCode,
+      'rideName': ride.name,
+    });
+  }
+
   Future<void> _createRide() async {
+    final nameController = TextEditingController();
+    final roomName = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buat Room Ride'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Beri nama room perjalanan (opsional). Anda akan menjadi Room Master.',
+              style: TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              maxLength: 100,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'Contoh: Touring Puncak, Sunmori',
+                labelText: 'Nama Room',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, nameController.text.trim()),
+            child: const Text('Buat Room'),
+          ),
+        ],
+      ),
+    );
+
+    if (roomName == null) return; // User membatalkan dialog
+
     setState(() => _busy = true);
     try {
       final repo = ref.read(rideRepositoryProvider);
-      final ride = await repo.createRide();
+      final ride = await repo.createRide(
+        name: roomName.isNotEmpty ? roomName : null,
+      );
 
       if (mounted) {
         final label = ride.name != null && ride.name!.isNotEmpty
-            ? 'Ride "${ride.name}" dibuat! Kode: ${ride.displayCode}'
-            : 'Ride dibuat! Kode: ${ride.displayCode}';
+            ? 'Room "${ride.name}" dibuat! Kode: ${ride.displayCode}'
+            : 'Room dibuat! Kode: ${ride.displayCode}';
         AppToast.success(context, label);
       }
 
@@ -113,6 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activeRide = ref.watch(rideStateProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -142,7 +220,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const HomeSectionTitle(),
                           const SizedBox(height: 12),
                           HomePrimaryCard(
-                            onTap: _busy ? null : _createRide,
+                            onTap: _busy
+                                ? null
+                                : (activeRide != null
+                                    ? _backToRide
+                                    : _createRide),
+                            activeRideName: activeRide == null
+                                ? null
+                                : ((activeRide.name?.isNotEmpty ?? false)
+                                    ? activeRide.name
+                                    : 'Ride aktif ${activeRide.displayCode}'),
                           ),
                           const SizedBox(height: 10),
                           HomeSecondaryCard(
