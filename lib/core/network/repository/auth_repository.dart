@@ -63,6 +63,20 @@ class AuthRepository {
     }
   }
 
+  /// PATCH /auth/me — ganti display name (lokal & Google).
+  Future<UserModel> updateName(String name) async {
+    try {
+      final response = await service.updateMe(name: name);
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw const AppException('Gagal memperbarui nama: respons tidak dikenal.');
+      }
+      return UserModel.fromJson(data);
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
   /// Request OTP forgot password. Return OTP jika server mengirimkan
   /// (mode dev/demo — lihat auth_handler.go:380).
   Future<String?> requestPasswordReset({required String email}) async {

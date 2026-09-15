@@ -9,10 +9,12 @@ class ProfileHero extends StatelessWidget {
     super.key,
     required this.name,
     required this.role,
+    this.onEditName,
   });
 
   final String name;
   final String role;
+  final VoidCallback? onEditName;
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +73,8 @@ class ProfileHero extends StatelessWidget {
                   elevation: 2,
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: () =>
-                        AppToast.info(context, 'Edit avatar segera hadir.'),
+                    onTap: onEditName ??
+                        () => AppToast.info(context, 'Edit nama segera hadir.'),
                     child: const SizedBox(
                       width: 26,
                       height: 26,

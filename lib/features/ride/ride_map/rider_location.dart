@@ -12,4 +12,19 @@ class RiderLocation {
     required this.heading,
     required this.speed,
   });
+
+  bool get isMoving => speed > 0.8;
+
+  RiderLocation copyWith({
+    LatLng? position,
+    double? heading,
+    double? speed,
+  }) {
+    return RiderLocation(
+      userId: userId,
+      position: position ?? this.position,
+      heading: heading ?? this.heading,
+      speed: speed ?? this.speed,
+    );
+  }
 }

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 class RideInviteSheet extends StatelessWidget {
   const RideInviteSheet({
     super.key,
     required this.qrData,
-    required this.displayName,
+    required this.displayCode,
   });
 
   /// QR encode UUID lengkap — bukan display name pendek.
   final String qrData;
-  final String displayName;
+  final String displayCode;
 
   @override
   Widget build(BuildContext context) {
@@ -68,23 +70,51 @@ class RideInviteSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.brandSoft,
+            Material(
+              color: AppColors.brandSoft,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Text(
-                displayName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.brandDark,
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: displayCode));
+                  if (context.mounted) {
+                    AppToast.success(context, 'Kode $displayCode berhasil disalin!');
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        displayCode,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.brandDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.copy_rounded,
+                        size: 18,
+                        color: AppColors.brand,
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Ketuk kode untuk menyalin',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.muted,
               ),
             ),
           ],

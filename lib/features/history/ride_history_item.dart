@@ -66,10 +66,20 @@ class RideHistoryItem {
       );
 
   String get timeRange {
+    // Kalau belum pernah dimulai (tahun 1970 = fallback parse null), tampilkan status
+    if (startedAt.year <= 1970) {
+      return status == RideStatus.cancelled ? 'Belum sempat dimulai' : 'Belum dimulai';
+    }
     String fmt(DateTime t) =>
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    if (endedAt.year <= 1970) {
+      return '${fmt(startedAt)} – Sekarang (Berjalan)';
+    }
     final dur = endedAt.difference(startedAt);
-    return '${fmt(startedAt)} – ${fmt(endedAt)} · ${dur.inHours}j ${dur.inMinutes % 60}m';
+    final hours = dur.inHours;
+    final mins = dur.inMinutes % 60;
+    final durStr = hours > 0 ? '${hours}j ${mins}m' : '${mins}m';
+    return '${fmt(startedAt)} – ${fmt(endedAt)} · $durStr';
   }
 
   String get roleLabel => role == RideRole.host ? 'Host' : 'Gabung';
@@ -105,7 +115,7 @@ class RideHistoryItem {
 
 enum RideRole { host, joined }
 
-enum RideStatus { completed, cancelled }
+enum RideStatus { planned, active, completed, cancelled }
 
 DateTime _parseDate(Object? value) {
   if (value is DateTime) return value;
@@ -123,6 +133,7 @@ RideRole _parseRole(Object? value) {
 }
 
 RideStatus _parseStatus(Object? value) {
+  if (value == 'pending') return RideStatus.planned;
   for (final s in RideStatus.values) {
     if (s.name == value) return s;
   }

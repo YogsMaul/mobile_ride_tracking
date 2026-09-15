@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../error/app_exception.dart';
 import '../dio_provider.dart';
+import '../models/ride_detail_models.dart';
 import '../models/ride_model.dart';
 import '../service/ride_service.dart';
 import '../../../features/history/ride_history_item.dart';
@@ -70,9 +71,17 @@ class RideRepository {
   /// GET /rides/me — ambil riwayat ride user.
   /// Backend mengembalikan array MyRideSummary yang sudah termasuk
   /// participant_count dan role (host/joined).
-  Future<List<RideHistoryItem>> getMyRides({String? status}) async {
+  Future<List<RideHistoryItem>> getMyRides({
+    String? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      final response = await service.getMyRides(status: status);
+      final response = await service.getMyRides(
+        status: status,
+        limit: limit,
+        offset: offset,
+      );
       final data = response.data;
       if (data is! List) {
         return [];
@@ -108,6 +117,67 @@ class RideRepository {
   Future<void> leaveRide(String rideId) async {
     try {
       await service.leaveRide(rideId);
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  Future<List<RideTrailPoint>> getRideTrail(String rideId) async {
+    try {
+      final response = await service.getRideTrail(rideId);
+      final data = response.data;
+      if (data is! List) return [];
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map((json) => RideTrailPoint.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  Future<List<RideMember>> getRideMembers(String rideId) async {
+    try {
+      final response = await service.getRideMembers(rideId);
+      final data = response.data;
+      if (data is! List) return [];
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map((json) => RideMember.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// PATCH /rides/:id/destination — owner set titik tujuan konvoi.
+  Future<RideModel> setDestination({
+    required String rideId,
+    required String name,
+    required double lat,
+    required double lng,
+  }) async {
+    try {
+      final response = await service.setDestination(
+        rideId: rideId,
+        name: name,
+        lat: lat,
+        lng: lng,
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw const AppException('Gagal menyimpan tujuan: data tidak valid.');
+      }
+      return RideModel.fromJson({'id': rideId, ...data});
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
+  /// DELETE /rides/:id/destination — owner hapus titik tujuan konvoi.
+  Future<void> clearDestination(String rideId) async {
+    try {
+      await service.clearDestination(rideId);
     } on DioException catch (e) {
       throw AppException.fromDio(e);
     }

@@ -6,6 +6,7 @@ class AppColors {
   static const Color brandDark = Color(0xFF0E3B27);
   static const Color brandSoft = Color(0xFFE3F1E9);
   static const Color accent = Color(0xFFE6A23C);
+  static const Color accentSoft = Color(0xFFFFF7E6);
 
   // Surface & Layout
   static const Color background = Color(0xFFF6F7F4);

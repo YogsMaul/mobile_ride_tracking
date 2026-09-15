@@ -369,52 +369,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             color: AppColors.line,
                                           ),
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.g_mobiledata_rounded,
-                                              size: 26,
-                                              color: AppColors.brand,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Lanjutkan dengan Google',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelLarge
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.sm),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'Belum punya akun?',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  color: AppColors.muted,
-                                                ),
-                                          ),
-                                          TextButton(
-                                            onPressed: _isLoading
-                                                ? null
-                                                : () => Navigator.pushNamed(
-                                                    context, '/register'),
-                                            child:
-                                                const Text('Daftar akun baru'),
-                                          ),
-                                        ],
-                                      ),
+                                       child: Row(
+                                           mainAxisAlignment:
+                                               MainAxisAlignment.center,
+                                           children: [
+                                             const Icon(
+                                               Icons.g_mobiledata_rounded,
+                                               size: 26,
+                                               color: AppColors.brand,
+                                             ),
+                                             const SizedBox(width: 6),
+                                             Flexible(
+                                               child: Text(
+                                                 'Lanjutkan dengan Google',
+                                                 maxLines: 1,
+                                                 overflow: TextOverflow.ellipsis,
+                                                 style: Theme.of(context)
+                                                     .textTheme
+                                                     .labelLarge
+                                                     ?.copyWith(
+                                                       fontWeight: FontWeight.w600,
+                                                     ),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                       const SizedBox(height: AppSpacing.sm),
+                                       Wrap(
+                                         alignment: WrapAlignment.center,
+                                         crossAxisAlignment:
+                                             WrapCrossAlignment.center,
+                                         children: [
+                                           Text(
+                                             'Belum punya akun?',
+                                             style: Theme.of(context)
+                                                 .textTheme
+                                                 .bodyMedium
+                                                 ?.copyWith(
+                                                   color: AppColors.muted,
+                                                 ),
+                                           ),
+                                           TextButton(
+                                             onPressed: _isLoading
+                                                 ? null
+                                                 : () => Navigator.pushNamed(
+                                                     context, '/register'),
+                                             child:
+                                                 const Text('Daftar akun baru'),
+                                           ),
+                                         ],
+                                       ),
                                     ],
                                   ),
                                 ),

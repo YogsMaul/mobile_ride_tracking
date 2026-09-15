@@ -27,27 +27,34 @@ class HomeHeroSection extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Expanded(
-              flex: 45,
+              flex: 48,
               child: Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.line),
-                  ),
-                  child: Text(
-                    'Jarak bukan penghalang\nuntuk tetap bersama.',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
-                      fontSize: 10.5,
-                      height: 1.35,
+                padding: const EdgeInsets.only(top: 38, right: 12),
+                child: Transform.translate(
+                  offset: const Offset(-28, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF4EC),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFCCE4D4), width: 1),
+                      ),
+                      child: Text(
+                        'Jarak bukan penghalang\nuntuk tetap bersama.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF2A593E),
+                          fontSize: 8.5,
+                          height: 1.25,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ),
                 ),
