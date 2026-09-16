@@ -64,9 +64,7 @@ class AuthInterceptor extends Interceptor {
         return false;
       }
 
-      final dio = Dio(
-        BaseOptions(baseUrl: requestOptions.baseUrl),
-      );
+      final dio = Dio(BaseOptions(baseUrl: requestOptions.baseUrl));
       final response = await dio.post(
         '/auth/refresh',
         data: {'refresh_token': refreshToken},
@@ -101,9 +99,7 @@ class AuthInterceptor extends Interceptor {
       method: requestOptions.method,
       headers: requestOptions.headers,
     );
-    final dio = Dio(
-      BaseOptions(baseUrl: requestOptions.baseUrl),
-    );
+    final dio = Dio(BaseOptions(baseUrl: requestOptions.baseUrl));
     return dio.request<dynamic>(
       requestOptions.path,
       data: requestOptions.data,

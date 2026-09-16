@@ -42,78 +42,99 @@ class ProfileScreen extends ConsumerWidget {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const ProfileHeader(),
-                      const SizedBox(height: 6),
-                      ProfileHero(
-                        name: name,
-                        role: role,
-                        onEditName: () => _showEditNameDialog(context, ref, name),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 14, 20, 10),
+                      child: ProfileHeader(),
+                    ),
+                    // Hero (foto + nama) dan Statistik ikut diam (fixed).
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ProfileHero(
+                            name: name,
+                            role: role,
+                            onEditName: () =>
+                                _showEditNameDialog(context, ref, name),
+                          ),
+                          const SizedBox(height: 8),
+                          const ProfileStats(),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      const ProfileStats(),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Informasi Akun',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.ink,
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 108),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Informasi Akun',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.ink,
+                                  ),
                             ),
-                      ),
-                      const SizedBox(height: 5),
-                      AccountInfoCard(
-                        icon: Icons.person_outline_rounded,
-                        label: 'Nama',
-                        value: name,
-                        onTap: () => _showEditNameDialog(context, ref, name),
-                      ),
-                      const SizedBox(height: 4),
-                      AccountInfoCard(
-                        icon: Icons.mail_outline_rounded,
-                        label: 'Email',
-                        value: email,
-                      ),
-                      const SizedBox(height: 4),
-                      AccountInfoCard(
-                        icon: Icons.verified_user_outlined,
-                        label: 'Role',
-                        value: role.isNotEmpty
-                            ? '${role[0].toUpperCase()}${role.substring(1)}'
-                            : 'User',
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Lainnya',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.ink,
+                            const SizedBox(height: 5),
+                            AccountInfoCard(
+                              icon: Icons.person_outline_rounded,
+                              label: 'Nama',
+                              value: name,
+                              onTap: () =>
+                                  _showEditNameDialog(context, ref, name),
                             ),
+                            const SizedBox(height: 4),
+                            AccountInfoCard(
+                              icon: Icons.mail_outline_rounded,
+                              label: 'Email',
+                              value: email,
+                            ),
+                            const SizedBox(height: 4),
+                            AccountInfoCard(
+                              icon: Icons.verified_user_outlined,
+                              label: 'Role',
+                              value: role.isNotEmpty
+                                  ? '${role[0].toUpperCase()}${role.substring(1)}'
+                                  : 'User',
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Lainnya',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.ink,
+                                  ),
+                            ),
+                            const SizedBox(height: 5),
+                            ActionCard(
+                              icon: Icons.settings_outlined,
+                              title: 'Pengaturan',
+                              description: 'Layar, izin lokasi, info aplikasi',
+                              onTap: () =>
+                                  Navigator.pushNamed(context, '/settings'),
+                            ),
+                            const SizedBox(height: 4),
+                            ActionCard(
+                              icon: Icons.logout_rounded,
+                              title: 'Keluar',
+                              description: 'Logout dari akun ini',
+                              isDestructive: true,
+                              onTap: () => _confirmLogout(context, ref),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 5),
-                      ActionCard(
-                        icon: Icons.settings_outlined,
-                        title: 'Pengaturan',
-                        description: 'Atur preferensi aplikasi',
-                        onTap: () =>
-                            AppToast.info(context, 'Pengaturan segera hadir.'),
-                      ),
-                      const SizedBox(height: 4),
-                      ActionCard(
-                        icon: Icons.logout_rounded,
-                        title: 'Keluar',
-                        description: 'Logout dari akun ini',
-                        isDestructive: true,
-                        onTap: () => _confirmLogout(context, ref),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -124,95 +145,19 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Dialog "Ubah Nama" — kirim PATCH /auth/me, refresh profil, toast sukses.
+  /// Controller hidup di [_EditNameDialog] (bukan lokal) supaya gak
+  /// ter-dispose saat dialog masih animasi keluar.
   Future<void> _showEditNameDialog(
     BuildContext context,
     WidgetRef ref,
     String currentName,
   ) async {
-    final controller = TextEditingController(text: currentName);
-    var isSaving = false;
-
-    Future<void> submit(
-      BuildContext ctx,
-      void Function(void Function()) setDialogState,
-    ) async {
-      final newName = controller.text.trim();
-      if (newName.length < 2) {
-        AppToast.error(ctx, 'Nama minimal 2 karakter ya.');
-        return;
-      }
-      setDialogState(() => isSaving = true);
-      try {
-        await ref.read(authRepositoryProvider).updateName(newName);
-        ref.invalidate(userProfileProvider);
-        if (ctx.mounted) Navigator.pop(ctx, true);
-      } on AppException catch (e) {
-        setDialogState(() => isSaving = false);
-        if (ctx.mounted) {
-          AppToast.error(ctx, e.message);
-        }
-      } catch (_) {
-        setDialogState(() => isSaving = false);
-        if (ctx.mounted) {
-          AppToast.error(ctx, 'Gagal menyimpan nama. Coba lagi.');
-        }
-      }
-    }
-
     final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text('Ubah Nama'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            maxLength: 60,
-            decoration: const InputDecoration(
-              labelText: 'Nama tampilan',
-              hintText: 'Cth: Neko Reii',
-              counterText: '',
-            ),
-            onSubmitted: (_) {
-              if (!isSaving) submit(ctx, setDialogState);
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.brand,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed:
-                  isSaving ? null : () => submit(ctx, setDialogState),
-              child: isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Simpan'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => _EditNameDialog(currentName: currentName),
     );
-
-    controller.dispose();
     if (saved == true && context.mounted) {
+      ref.invalidate(userProfileProvider);
       AppToast.success(context, 'Nama berhasil diperbarui.');
     }
   }
@@ -241,5 +186,95 @@ class ProfileScreen extends ConsumerWidget {
       ref.invalidate(userProfileProvider);
       await ref.read(authStateProvider).onLogout();
     }
+  }
+}
+
+/// Dialog "Ubah Nama" — StatefulWidget dengan controller milik sendiri,
+/// dispose otomatis bareng widget (bukan manual), jadi aman dari race
+/// controller-used-after-dispose saat parent rebuild/invalidate.
+class _EditNameDialog extends ConsumerStatefulWidget {
+  final String currentName;
+  const _EditNameDialog({required this.currentName});
+
+  @override
+  ConsumerState<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends ConsumerState<_EditNameDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.currentName,
+  );
+  var _isSaving = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final newName = _controller.text.trim();
+    if (newName.length < 2) {
+      AppToast.error(context, 'Nama minimal 2 karakter ya.');
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(authRepositoryProvider).updateName(newName);
+      if (mounted) Navigator.pop(context, true);
+    } on AppException catch (e) {
+      setState(() => _isSaving = false);
+      if (mounted) AppToast.error(context, e.message);
+    } catch (_) {
+      setState(() => _isSaving = false);
+      if (mounted) AppToast.error(context, 'Gagal menyimpan nama. Coba lagi.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Ubah Nama'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        maxLength: 60,
+        decoration: const InputDecoration(
+          labelText: 'Nama tampilan',
+          hintText: 'Cth: Neko Reii',
+          counterText: '',
+        ),
+        onSubmitted: (_) {
+          if (!_isSaving) _submit();
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Batal'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.brand,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: _isSaving ? null : _submit,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Simpan'),
+        ),
+      ],
+    );
   }
 }

@@ -33,10 +33,10 @@ class RideMember {
   }
 
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
-        'name': name,
-        if (avatarUrl != null) 'avatar_url': avatarUrl,
-        'role': role,
-        'joined_at': joinedAt.toIso8601String(),
-      };
+    'user_id': userId,
+    'name': name,
+    if (avatarUrl != null) 'avatar_url': avatarUrl,
+    'role': role,
+    'joined_at': joinedAt.toIso8601String(),
+  };
 }

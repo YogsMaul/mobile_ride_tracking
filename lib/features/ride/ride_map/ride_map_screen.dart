@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/error/app_exception.dart';
 import '../../../core/location/location_provider.dart';
@@ -15,15 +15,26 @@ import '../../../core/network/repository/ride_repository.dart';
 import '../../../core/network/service/route_service.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/jwt_utils.dart';
+import '../../../core/websocket/ws_manager.dart';
 import '../../../core/websocket/ws_manager_provider.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../settings/settings_provider.dart';
 import '../ride_state.dart';
 import 'rider_location.dart';
+import 'ride_destination_controller.dart';
+import 'ride_smoothing_controller.dart';
 import 'widgets/ride_bottom_bar.dart';
 import 'widgets/ride_destination_sheet.dart';
 import 'widgets/ride_invite_sheet.dart';
+import 'widgets/ride_map_app_bar.dart';
+import 'widgets/ride_map_controls.dart';
+import 'widgets/ride_map_destination_card.dart';
+import 'widgets/ride_map_dialogs.dart';
 import 'widgets/ride_map_markers.dart';
+import 'widgets/ride_map_pick_card.dart';
 import 'widgets/ride_members_sheet.dart';
+import 'widgets/ride_map_status_banner.dart';
 
 class RideMapScreen extends ConsumerStatefulWidget {
   final String rideId;
@@ -44,9 +55,9 @@ class RideMapScreen extends ConsumerStatefulWidget {
 class _RideMapScreenState extends ConsumerState<RideMapScreen> {
   static const _storage = SecureStorageService();
   final MapController _mapController = MapController();
-  final RouteService _routeService = RouteService();
-  final Map<String, RiderLocation> _otherRiders = {};
-  final Map<String, RiderLocation> _smoothRiders = {};
+  final RideSmoothingController _riders = RideSmoothingController();
+  final RideDestinationController _dest = RideDestinationController();
+
   LatLng? _currentPosition;
   double _myHeading = 0;
   double _mySpeed = 0;
@@ -57,25 +68,13 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
   bool _isStarting = false;
   bool _followMe = true;
   Timer? _membersPollTimer;
-  Timer? _smoothTimer;
   Timer? _heartbeatTimer;
-
-  // Destination & Route State
-  String? _destName;
-  LatLng? _destPoint;
-  RideRouteResult? _routeResult;
-  bool _isCalculatingRoute = false;
-  bool _pickMode = false;
-  LatLng? _pickedPoint;
-  String? _pickedName;
-  RideRouteResult? _previewRoute;
-  bool _previewUnavailable = false;
-  Timer? _previewDebounce;
 
   StreamSubscription<Map<String, dynamic>>? _wsSubscription;
   StreamSubscription<Position>? _locationSubscription;
 
   late final RideStateNotifier _rideNotifier;
+  late final WebSocketManager _ws;
   bool _permanentLeave = false;
 
   bool get _isHost {
@@ -96,21 +95,33 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
   void initState() {
     super.initState();
     _rideNotifier = ref.read(rideStateProvider.notifier);
-    _smoothTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      _tickSmooth();
-    });
+    _ws = ref.read(wsManagerProvider);
+    // Layar tetap menyala selama ride — sesuai preferensi user di Settings.
+    final keepOn = ref.read(settingsProvider).keepScreenOn;
+    if (keepOn) {
+      WakelockPlus.enable();
+    }
+    _riders.addListener(_rebuild);
+    _dest.addListener(_rebuild);
+    _riders.start();
     _initRide();
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _previewDebounce?.cancel();
     _membersPollTimer?.cancel();
-    _smoothTimer?.cancel();
     _heartbeatTimer?.cancel();
-    ref.read(wsManagerProvider).disconnect();
     _wsSubscription?.cancel();
     _locationSubscription?.cancel();
+    _ws.disconnect();
+    _riders.dispose();
+    _dest.dispose();
+    // Selalu matikan wakelock saat keluar dari peta.
+    WakelockPlus.disable();
 
     if (_permanentLeave) {
       Future.microtask(_rideNotifier.clear);
@@ -120,7 +131,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
 
   Future<void> _initRide() async {
     final locationService = ref.read(locationServiceProvider);
-    final ws = ref.read(wsManagerProvider);
+    final ws = _ws;
 
     _myUserId = await _resolveCurrentUserId();
 
@@ -188,20 +199,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       if (_followMe) _mapController.move(newPos, _mapController.camera.zoom);
 
       // Re-route OSRM hanya jika melenceng > 500m dari awal rute saat ini.
-      if (_destPoint != null &&
-          _routeResult != null &&
-          _routeResult!.points.isNotEmpty) {
-        final dist = const Distance().as(
-          LengthUnit.Meter,
-          _routeResult!.points.first,
-          newPos,
-        );
-        if (dist > 500) {
-          _refreshRoute();
-        }
-      } else if (_destPoint != null && _routeResult == null) {
-        _refreshRoute();
-      }
+      _autoReroute(newPos);
 
       _sendLocation(
         lat: position.latitude,
@@ -210,6 +208,22 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
         speed: position.speed,
       );
     });
+  }
+
+  void _autoReroute(LatLng newPos) {
+    final route = _dest.routeResult;
+    if (_dest.destPoint != null && route != null && route.points.isNotEmpty) {
+      final dist = const Distance().as(
+        LengthUnit.Meter,
+        route.points.first,
+        newPos,
+      );
+      if (dist > 500) {
+        _dest.refreshRoute(newPos);
+      }
+    } else if (_dest.destPoint != null && route == null) {
+      _dest.refreshRoute(newPos);
+    }
   }
 
   void _startMembersPolling() {
@@ -237,12 +251,16 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
         setState(() {
           _rideDetail = detail;
           _members = results[1] as List<RideMember>;
-          _destName = detail.destName;
-          if (detail.destLat != null && detail.destLng != null) {
-            _destPoint = LatLng(detail.destLat!, detail.destLng!);
+          if (detail.destName != null &&
+              detail.destLat != null &&
+              detail.destLng != null) {
+            _dest.applyDestination(
+              detail.destName!,
+              LatLng(detail.destLat!, detail.destLng!),
+            );
           }
         });
-        _refreshRoute();
+        _dest.refreshRoute(_currentPosition);
       }
     } catch (_) {
       // Fallback jika salah satu endpoint gagal
@@ -270,23 +288,29 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       final lat = (data['lat'] as num?)?.toDouble();
       final lng = (data['lng'] as num?)?.toDouble();
       if (name != null && lat != null && lng != null) {
-        _onDestinationReceived(name, LatLng(lat, lng));
+        final point = LatLng(lat, lng);
+        final before = _dest.destName;
+        _dest.applyDestination(name, point);
+        if (before != name) {
+          _dest.refreshRoute(_currentPosition);
+          if (mounted) AppToast.info(context, 'Tujuan diset ke: $name');
+        }
       }
       return;
     }
 
     if (type == 'destination_cleared') {
-      _onDestinationCleared(notify: true);
+      _dest.clear();
+      if (mounted) {
+        AppToast.info(context, 'Tujuan konvoi dihapus oleh Room Master');
+      }
       return;
     }
 
     if (type == 'member_joined' || type == 'member_left') {
       if (type == 'member_left') {
         final gone = data['user_id'] as String?;
-        if (gone != null) {
-          _otherRiders.remove(gone);
-          _smoothRiders.remove(gone);
-        }
+        if (gone != null) _riders.remove(gone);
       }
       _refreshMembers();
       if (mounted && type == 'member_joined') {
@@ -322,57 +346,15 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     final heading = ((data['heading'] as num?) ?? 0.0).toDouble();
     final speed = ((data['speed'] as num?) ?? 0.0).toDouble();
 
-    _otherRiders[userId] = RiderLocation(
-      userId: userId,
-      position: LatLng(lat, lng),
-      heading: heading,
-      speed: speed,
+    _riders.update(
+      userId,
+      RiderLocation(
+        userId: userId,
+        position: LatLng(lat, lng),
+        heading: heading,
+        speed: speed,
+      ),
     );
-    _smoothRiders.putIfAbsent(userId, () => _otherRiders[userId]!);
-  }
-
-  void _tickSmooth() {
-    if (!mounted || _otherRiders.isEmpty) return;
-    var changed = false;
-    final next = <String, RiderLocation>{};
-    _otherRiders.forEach((id, target) {
-      final cur = _smoothRiders[id];
-      if (cur == null) {
-        next[id] = target;
-        changed = true;
-        return;
-      }
-      final lat =
-          cur.position.latitude +
-          (target.position.latitude - cur.position.latitude) * 0.3;
-      final lng =
-          cur.position.longitude +
-          (target.position.longitude - cur.position.longitude) * 0.3;
-      final dLat = (target.position.latitude - lat).abs();
-      final dLng = (target.position.longitude - lng).abs();
-      if (dLat < 1e-7 && dLng < 1e-7) {
-        next[id] = target;
-      } else {
-        next[id] = cur.copyWith(
-          position: LatLng(lat, lng),
-          heading: target.heading,
-          speed: target.speed,
-        );
-        changed = true;
-      }
-      if ((cur.heading - target.heading).abs() > 0.5 ||
-          (cur.speed - target.speed).abs() > 0.1) {
-        changed = true;
-      }
-    });
-    if (_smoothRiders.length != next.length) changed = true;
-    if (changed) {
-      setState(() {
-        _smoothRiders
-          ..clear()
-          ..addAll(next);
-      });
-    }
   }
 
   Map<String, String> get _memberNames => {
@@ -385,7 +367,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     required double heading,
     required double speed,
   }) {
-    ref.read(wsManagerProvider).send({
+    _ws.send({
       'type': 'location_update',
       'ride_id': widget.rideId,
       'lat': lat,
@@ -395,57 +377,11 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     });
   }
 
-  void _onDestinationReceived(String name, LatLng point) {
-    if (!mounted) return;
-    // Skip kalau sama dengan yang sudah tampil (misal echo broadcast dari
-    // device host sendiri setelah set tujuan).
-    if (_destName == name &&
-        _destPoint != null &&
-        (_destPoint!.latitude - point.latitude).abs() < 1e-9 &&
-        (_destPoint!.longitude - point.longitude).abs() < 1e-9) {
-      return;
-    }
-    setState(() {
-      _destName = name;
-      _destPoint = point;
-      if (_rideDetail != null) {
-        _rideDetail = _rideDetail!.copyWith(
-          destName: name,
-          destLat: point.latitude,
-          destLng: point.longitude,
-        );
-      }
-    });
-    _refreshRoute();
-    AppToast.info(context, 'Tujuan diset ke: $name');
-  }
-
-  void _onDestinationCleared({bool notify = false}) {
-    if (!mounted) return;
-    setState(() {
-      _destName = null;
-      _destPoint = null;
-      _routeResult = null;
-      if (_rideDetail != null) {
-        _rideDetail = RideModel(
-          id: _rideDetail!.id,
-          ownerId: _rideDetail!.ownerId,
-          name: _rideDetail!.name,
-          inviteCode: _rideDetail!.inviteCode,
-          status: _rideDetail!.status,
-        );
-      }
-    });
-    if (notify) {
-      AppToast.info(context, 'Tujuan konvoi dihapus oleh Room Master');
-    }
-  }
-
   Future<void> _handleClearDestination() async {
     try {
       final repo = ref.read(rideRepositoryProvider);
       await repo.clearDestination(widget.rideId);
-      _onDestinationCleared();
+      _dest.clear();
       if (mounted) {
         AppToast.success(context, 'Tujuan berhasil dihapus');
       }
@@ -453,24 +389,6 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       if (mounted) AppToast.error(context, e.message);
     } catch (e) {
       if (mounted) AppToast.error(context, 'Gagal menghapus tujuan: $e');
-    }
-  }
-
-  Future<void> _refreshRoute() async {
-    final dest = _destPoint;
-    final start = _currentPosition;
-    if (dest == null || start == null || _isCalculatingRoute) return;
-
-    setState(() => _isCalculatingRoute = true);
-    final route = await _routeService.getRoute(
-      start: start,
-      destination: dest,
-    );
-    if (mounted) {
-      setState(() {
-        _routeResult = route;
-        _isCalculatingRoute = false;
-      });
     }
   }
 
@@ -484,92 +402,49 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       ),
       builder: (_) => RideDestinationSheet(
         isHost: _isHost,
-        currentDestName: _destName,
-        currentLat: _destPoint?.latitude,
-        currentLng: _destPoint?.longitude,
-        routeDistance: _routeResult?.distanceFormatted,
-        routeDuration: _routeResult?.durationFormatted,
+        currentDestName: _dest.destName,
+        currentLat: _dest.destPoint?.latitude,
+        currentLng: _dest.destPoint?.longitude,
+        routeDistance: _dest.routeResult?.distanceFormatted,
+        routeDuration: _dest.routeResult?.durationFormatted,
         onSelectDestination: (name, lat, lng) async {
           await _handleSetDestination(name, LatLng(lat, lng));
         },
-        onPickOnMap: _isHost ? _startPickMode : null,
-        onClearDestination: _isHost && _destName != null
+        onPickOnMap: _isHost ? _dest.startPick : null,
+        onClearDestination: _isHost && _dest.destName != null
             ? _handleClearDestination
             : null,
       ),
     );
   }
 
-  void _startPickMode() {
-    setState(() {
-      _pickMode = true;
-      _pickedPoint = null;
-      _pickedName = null;
-      _previewRoute = null;
-      _previewUnavailable = false;
-    });
-  }
-
-  Future<void> _onMapTap(LatLng point) async {
-    if (!_pickMode || !_isHost) return;
-    setState(() {
-      _pickedPoint = point;
-      _pickedName = 'Memuat nama lokasi…';
-      _previewRoute = null;
-      _previewUnavailable = false;
-    });
-    final name = await _routeService.reverseGeocode(point);
-    if (!mounted || _pickedPoint != point) return;
-    setState(() => _pickedName = name);
-    _schedulePreviewFetch(point);
-  }
-
-  void _schedulePreviewFetch(LatLng point) {
-    _previewDebounce?.cancel();
-    _previewDebounce = Timer(const Duration(milliseconds: 400), () async {
-      final start = _currentPosition;
-      if (!mounted || start == null) {
-        if (mounted) setState(() => _previewUnavailable = true);
-        return;
-      }
-      final route = await _routeService.getRoute(
-        start: start,
-        destination: point,
+  /// Hold (long-press) peta oleh host → langsung masuk mode pilih titik
+  /// di lokasi yang ditekan, tanpa perlu buka sheet tujuan dulu.
+  void _openDestinationPicker(LatLng point) {
+    if (!_isHost) {
+      AppToast.info(
+        context,
+        'Cuma Room Master yang bisa mengatur tujuan konvoi.',
       );
-      if (!mounted || _pickedPoint != point) return;
-      setState(() {
-        _previewRoute = route;
-        _previewUnavailable = route == null || route.points.isEmpty;
-      });
-    });
+      return;
+    }
+    _dest.startPick();
+    _onMapTap(point);
   }
 
-  void _cancelPick() {
-    _previewDebounce?.cancel();
-    setState(() {
-      _pickMode = false;
-      _pickedPoint = null;
-      _pickedName = null;
-      _previewRoute = null;
-      _previewUnavailable = false;
-    });
+  void _onMapTap(LatLng point) {
+    if (!_dest.pickMode || !_isHost) return;
+    _dest.tapPoint(point, _currentPosition);
   }
 
   Future<void> _applyPickedPoint() async {
-    final point = _pickedPoint;
+    final point = _dest.pickedPoint;
     if (point == null) return;
-    final name = _pickedName?.isNotEmpty == true
-        ? _pickedName!
+    final name = _dest.pickedName?.isNotEmpty == true
+        ? _dest.pickedName!
         : 'Titik Terpilih';
-    final preview = _previewRoute;
-    _previewDebounce?.cancel();
-    setState(() {
-      _pickMode = false;
-      _pickedPoint = null;
-      _pickedName = null;
-      _previewRoute = null;
-      _previewUnavailable = false;
-    });
+    final preview = _dest.previewRoute;
+    _dest.confirmPick();
     await _handleSetDestination(name, point, previewRoute: preview);
   }
 
@@ -586,26 +461,23 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
         lat: point.latitude,
         lng: point.longitude,
       );
-      if (mounted) {
-        setState(() {
-          _destName = name;
-          _destPoint = point;
-          if (previewRoute != null) {
-            _routeResult = previewRoute;
-          }
-          if (_rideDetail != null) {
-            _rideDetail = _rideDetail!.copyWith(
-              destName: name,
-              destLat: point.latitude,
-              destLng: point.longitude,
-            );
-          }
-        });
-        if (previewRoute == null) {
-          _refreshRoute();
-        }
-        AppToast.success(context, 'Tujuan berhasil diperbarui');
+      if (!mounted) return;
+      if (previewRoute != null) {
+        _dest.applyPreview(name, point, previewRoute);
+      } else {
+        _dest.applyDestination(name, point);
+        _dest.refreshRoute(_currentPosition);
       }
+      setState(() {
+        if (_rideDetail != null) {
+          _rideDetail = _rideDetail!.copyWith(
+            destName: name,
+            destLat: point.latitude,
+            destLng: point.longitude,
+          );
+        }
+      });
+      AppToast.success(context, 'Tujuan berhasil diperbarui');
     } on AppException catch (e) {
       if (mounted) AppToast.error(context, e.message);
     } catch (e) {
@@ -651,7 +523,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
   }
 
   void _locateRider(RideMember member) {
-    final rider = _smoothRiders[member.userId] ?? _otherRiders[member.userId];
+    final rider = _riders.smooth[member.userId];
     if (rider == null) {
       if (mounted) {
         AppToast.info(context, '${member.name} belum mengirim lokasi.');
@@ -659,7 +531,10 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       return;
     }
     setState(() => _followMe = false);
-    _mapController.move(rider.position, _mapController.camera.zoom.clamp(16.0, 17.0));
+    _mapController.move(
+      rider.position,
+      _mapController.camera.zoom.clamp(16.0, 17.0),
+    );
   }
 
   Future<void> _startRide() async {
@@ -690,106 +565,28 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
 
   /// Tombol back: minimize ke beranda tanpa keluar room, atau keluar beneran.
   Future<void> _confirmBackAction() async {
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Kembali ke Beranda?'),
-        content: const Text(
-          'Room tetap berjalan dan kamu bisa masuk lagi kapan saja lewat '
-          'banner di beranda. Selama di luar halaman, posisimu tidak '
-          'dibagikan ke rider lain.',
-          style: TextStyle(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.warn),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _confirmLeaveOrEnd();
-            },
-            child: Text(_isHost
-                ? (_rideStatus == 'planned' ? 'Batalkan Room' : 'Selesaikan')
-                : 'Keluar Room'),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              minimumSize: const Size(0, 40),
-            ),
-            onPressed: () => Navigator.pop(ctx, 'home'),
-            icon: const Icon(Icons.home_outlined, size: 18),
-            label: const Text('Ke Beranda'),
-          ),
-        ],
-      ),
-    );
-    if (action == 'home' && mounted) Navigator.pop(context);
+    final leaveLabel = _isHost
+        ? (_rideStatus == 'planned' ? 'Batalkan Room' : 'Selesaikan')
+        : 'Keluar Room';
+    final action = await showConfirmBackDialog(context, leaveLabel: leaveLabel);
+    if (action == 'leave' && mounted) {
+      _confirmLeaveOrEnd();
+    } else if (action == 'home' && mounted) {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _confirmLeaveOrEnd() async {
-    final isHost = _isHost;
-    final isPlanned = _rideStatus == 'planned';
-
-    String title;
-    String content;
-    String confirmLabel;
-
-    if (isHost) {
-      if (isPlanned) {
-        title = 'Batalkan Room?';
-        content = 'Room akan dibatalkan dan semua peserta akan dikeluarkan.';
-        confirmLabel = 'Batalkan Room';
-      } else {
-        title = 'Selesaikan Perjalanan?';
-        content = 'Perjalanan akan diselesaikan dan tracking konvoi diakhiri.';
-        confirmLabel = 'Selesaikan';
-      }
-    } else {
-      title = 'Keluar dari Room?';
-      content = 'Kamu akan keluar dari sesi perjalanan ini.';
-      confirmLabel = 'Keluar';
-    }
-
-    final ok = await showDialog<bool>(
+    final ok = await runLeaveOrEndFlow(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.warn),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(confirmLabel),
-          ),
-        ],
-      ),
+      repo: ref.read(rideRepositoryProvider),
+      rideId: widget.rideId,
+      isHost: _isHost,
+      isPlanned: _rideStatus == 'planned',
     );
-
-    if (ok == true && mounted) {
+    if (ok && mounted) {
       _permanentLeave = true;
-      try {
-        final repo = ref.read(rideRepositoryProvider);
-        if (isHost) {
-          if (isPlanned) {
-            await repo.cancelRide(widget.rideId);
-          } else {
-            await repo.endRide(widget.rideId);
-          }
-        } else {
-          await repo.leaveRide(widget.rideId);
-        }
-      } catch (_) {
-        // Abaikan error jaringan saat keluar
-      }
-      if (mounted) Navigator.pop(context);
+      Navigator.pop(context);
     }
   }
 
@@ -799,15 +596,17 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       currentPosition: _currentPosition,
       currentHeading: _myHeading,
       currentIsMoving: _mySpeed > 0.8,
-      otherRiders: _smoothRiders.isNotEmpty ? _smoothRiders : _otherRiders,
+      otherRiders: _riders.smooth,
       names: _memberNames,
-      destinationPoint: _pickedPoint ?? _destPoint,
-      destinationName: _pickedPoint != null ? _pickedName : _destName,
-      destinationIsPreview: _pickedPoint != null,
+      destinationPoint: _dest.pickedPoint ?? _dest.destPoint,
+      destinationName: _dest.pickedPoint != null
+          ? _dest.pickedName
+          : _dest.destName,
+      destinationIsPreview: _dest.pickedPoint != null,
     );
     final riderCount = _members.isNotEmpty
         ? _members.length
-        : (_otherRiders.length + (_currentPosition != null ? 1 : 0));
+        : (_riders.smooth.length + (_currentPosition != null ? 1 : 0));
     final isPlanned = _rideStatus == 'planned';
 
     return PopScope(
@@ -817,104 +616,13 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       },
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.white.withValues(alpha: 0.9),
-          elevation: 0,
-          titleSpacing: 0,
-          leading: IconButton(
-            tooltip: 'Kembali ke Beranda',
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.ink,
-              size: 20,
-            ),
-            onPressed: _confirmBackAction,
-          ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isPlanned ? AppColors.accentSoft : AppColors.brandSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _StatusDot(live: !isPlanned),
-                    const SizedBox(width: 5),
-                    Text(
-                      isPlanned ? 'LOBBY' : 'LIVE',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: isPlanned
-                            ? AppColors.accent
-                            : AppColors.brandDark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _displayName(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          actions: [
-            // Button list peserta (kiri dari QR icon)
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  tooltip: 'Daftar Peserta',
-                  icon: const Icon(
-                    Icons.people_alt_outlined,
-                    color: AppColors.ink,
-                  ),
-                  onPressed: _showMembersSheet,
-                ),
-                if (_members.isNotEmpty)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.brand,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '${_members.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            IconButton(
-              tooltip: 'Undang',
-              icon: const Icon(Icons.qr_code_2, color: AppColors.ink),
-              onPressed: _showInviteQr,
-            ),
-          ],
+        appBar: RideMapAppBar(
+          isPlanned: isPlanned,
+          title: _displayName(),
+          memberCount: _members.length,
+          onBack: _confirmBackAction,
+          onShowMembers: _showMembersSheet,
+          onShowInvite: _showInviteQr,
         ),
         body: Stack(
           children: [
@@ -927,6 +635,13 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
                 minZoom: 5,
                 maxZoom: 18,
                 onTap: (_, point) => _onMapTap(point),
+                onLongPress: (_, point) {
+                  if (_dest.pickMode && _isHost) {
+                    _onMapTap(point);
+                    return;
+                  }
+                  _openDestinationPicker(point);
+                },
                 onPositionChanged: (pos, hasGesture) {
                   if (hasGesture && _followMe) {
                     setState(() => _followMe = false);
@@ -938,21 +653,23 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.ridetracking.app',
                 ),
-                if (_previewRoute != null && _previewRoute!.points.isNotEmpty)
+                if (_dest.previewRoute != null &&
+                    _dest.previewRoute!.points.isNotEmpty)
                   PolylineLayer(
                     polylines: [
                       Polyline(
-                        points: _previewRoute!.points,
+                        points: _dest.previewRoute!.points,
                         strokeWidth: 5.0,
                         color: AppColors.ink.withValues(alpha: 0.35),
                       ),
                     ],
                   ),
-                if (_routeResult != null && _routeResult!.points.isNotEmpty)
+                if (_dest.routeResult != null &&
+                    _dest.routeResult!.points.isNotEmpty)
                   PolylineLayer(
                     polylines: [
                       Polyline(
-                        points: _routeResult!.points,
+                        points: _dest.routeResult!.points,
                         strokeWidth: 5.5,
                         color: AppColors.brand,
                         borderColor: Colors.white.withValues(alpha: 0.8),
@@ -964,414 +681,76 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
               ],
             ),
             // Lobby banner notice di bawah AppBar
-            if (isPlanned)
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 8, left: 16, right: 16),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.35),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: AppColors.accentSoft,
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: const Icon(
-                            Icons.hourglass_top_rounded,
-                            size: 16,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Flexible(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _isHost
-                                    ? 'Semua rider siap?'
-                                    : 'Menunggu Room Master',
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                              Text(
-                                _isHost
-                                    ? 'Tekan "Mulai Perjalanan" di bawah buat gas.'
-                                    : 'Konvoi mulai otomatis pas host menekan tombol.',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            if (_pickMode)
+            if (isPlanned) RideLobbyBanner(isHost: _isHost),
+            if (_dest.pickMode)
               Positioned(
                 left: 14,
                 right: 72,
                 bottom: 14,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.line),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 14,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: _pickedPoint != null
-                                  ? AppColors.brandSoft
-                                  : AppColors.surfaceMuted,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: Icon(
-                              _pickedPoint != null
-                                  ? Icons.place_rounded
-                                  : Icons.touch_app_rounded,
-                              color: _pickedPoint != null
-                                  ? AppColors.brand
-                                  : AppColors.muted,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _pickedPoint != null
-                                      ? (_pickedName ??
-                                          'Memuat nama lokasi…')
-                                      : 'Mode Pilih Tujuan',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.ink,
-                                  ),
-                                ),
-                                Text(
-                                  _pickedPoint != null
-                                      ? (_previewRoute != null
-                                          ? '${_previewRoute!.distanceFormatted} • ${_previewRoute!.durationFormatted}'
-                                          : (_previewUnavailable
-                                              ? 'Jalan tidak terdeteksi'
-                                              : 'Menghitung rute…'))
-                                      : 'Ketuk sembarang titik di peta',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _previewRoute != null
-                                        ? AppColors.brand
-                                        : AppColors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.muted,
-                                side: const BorderSide(color: AppColors.line),
-                                minimumSize: const Size(0, 38),
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.md,
-                                  ),
-                                ),
-                              ),
-                              onPressed: _cancelPick,
-                              child: const Text(
-                                'Batal',
-                                style: TextStyle(fontSize: 12.5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 2,
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.brand,
-                                disabledBackgroundColor:
-                                    AppColors.surfaceMuted,
-                                disabledForegroundColor: AppColors.muted,
-                                minimumSize: const Size(0, 38),
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.md,
-                                  ),
-                                ),
-                              ),
-                              onPressed: _pickedPoint != null
-                                  ? _applyPickedPoint
-                                  : null,
-                              child: const Text(
-                                'Jadikan Tujuan',
-                                style: TextStyle(fontSize: 12.5),
-                              ),
-                            ),
-                          ),
-                         ],
-                       ),
-                     ],
-                   ),
-                 ),
-               ),
-             if (!isPlanned)
-              Positioned(
-                top: 12,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.ink.withValues(alpha: 0.82),
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _StatusDot(live: true, small: true),
-                          const SizedBox(width: 7),
-                          Text(
-                            '$riderCount rider • live tracking',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: RideMapPickCard(
+                  pickedPoint: _dest.pickedPoint,
+                  pickedName: _dest.pickedName,
+                  previewRoute: _dest.previewRoute,
+                  previewUnavailable: _dest.previewUnavailable,
+                  onCancel: _dest.cancelPick,
+                  onApply: _applyPickedPoint,
                 ),
               ),
-            if (!_pickMode && (_destName != null || _isHost))
+            if (!isPlanned) RideLivePill(riderCount: riderCount),
+            if (!_dest.pickMode && (_dest.destName != null || _isHost))
               Positioned(
                 left: 14,
                 right: 72,
-                bottom: _destName != null && _routeResult != null ? 56 : 14,
+                bottom: _dest.destName != null && _dest.routeResult != null
+                    ? 56
+                    : 14,
                 child: SafeArea(
-                  child: GestureDetector(
+                  child: RideMapDestinationCard(
+                    destName: _dest.destName,
+                    routeResult: _dest.routeResult,
+                    isCalculatingRoute: _dest.isCalculatingRoute,
+                    isHost: _isHost,
                     onTap: () {
-                      if (_destPoint != null) {
+                      if (_dest.destPoint != null) {
                         setState(() => _followMe = false);
                         _mapController.move(
-                          _destPoint!,
+                          _dest.destPoint!,
                           _mapController.camera.zoom.clamp(14.0, 16.0),
                         );
-                      } else {
-                        _showDestinationSheet();
                       }
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.flag_rounded,
-                            color: AppColors.warn,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _destName ?? 'Belum ada tujuan',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.ink,
-                                  ),
-                                ),
-                                Text(
-                                  _routeResult != null
-                                      ? '${_routeResult!.distanceFormatted} • ${_routeResult!.durationFormatted} dari posisimu'
-                                      : (_isHost
-                                          ? 'Ketuk untuk atur titik finish konvoi'
-                                          : 'Tap pin untuk lacak arah tujuan'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _routeResult != null
-                                        ? AppColors.brand
-                                        : AppColors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_isCalculatingRoute)
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          else if (_isHost && _destName != null)
-                            IconButton(
-                              tooltip: 'Hapus tujuan',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                color: AppColors.warn,
-                                size: 20,
-                              ),
-                              onPressed: _handleClearDestination,
-                            )
-                          else
-                            const Icon(
-                              Icons.chevron_right_rounded,
-                              color: AppColors.muted,
-                              size: 20,
-                            ),
-                        ],
-                      ),
-                    ),
+                    onClear: _handleClearDestination,
+                    onShowSheet: _showDestinationSheet,
                   ),
                 ),
               ),
             Positioned(
               right: 14,
               bottom: 14,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _MapFab(
-                    tooltip: _followMe ? 'Ikuti saya: ON' : 'Ikuti saya',
-                    icon: _followMe
-                        ? Icons.my_location_rounded
-                        : Icons.location_searching_rounded,
-                    active: _followMe,
-                    onTap: () {
-                      setState(() => _followMe = true);
-                      if (_currentPosition != null) {
-                        _mapController.move(
-                          _currentPosition!,
-                          _mapController.camera.zoom.clamp(14.0, 17.0),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _MapFab(
-                    tooltip: 'Zoom in',
-                    icon: Icons.add_rounded,
-                    onTap: () => _mapController.move(
-                      _mapController.camera.center,
-                      (_mapController.camera.zoom + 1).clamp(5.0, 18.0),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _MapFab(
-                    tooltip: 'Zoom out',
-                    icon: Icons.remove_rounded,
-                    onTap: () => _mapController.move(
-                      _mapController.camera.center,
-                      (_mapController.camera.zoom - 1).clamp(5.0, 18.0),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _MapFab(
-                    tooltip: _destName != null ? 'Tujuan konvoi' : 'Atur tujuan',
-                    icon: Icons.flag_rounded,
-                    active: _destName != null,
-                    onTap: _showDestinationSheet,
-                  ),
-                ],
+              child: RideMapControls(
+                followMe: _followMe,
+                hasDestination: _dest.destName != null,
+                destTooltip: _dest.destName != null
+                    ? 'Tujuan konvoi'
+                    : 'Atur tujuan',
+                onFollowMe: () {
+                  setState(() => _followMe = true);
+                  if (_currentPosition != null) {
+                    _mapController.move(
+                      _currentPosition!,
+                      _mapController.camera.zoom.clamp(14.0, 17.0),
+                    );
+                  }
+                },
+                onZoomIn: () => _mapController.move(
+                  _mapController.camera.center,
+                  (_mapController.camera.zoom + 1).clamp(5.0, 18.0),
+                ),
+                onZoomOut: () => _mapController.move(
+                  _mapController.camera.center,
+                  (_mapController.camera.zoom - 1).clamp(5.0, 18.0),
+                ),
+                onShowDestination: _showDestinationSheet,
               ),
             ),
           ],
@@ -1394,23 +773,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
 
     final token = await _storage.getAccessToken();
     if (token == null || token.isEmpty) return null;
-    return _userIdFromJwt(token);
-  }
-
-  String? _userIdFromJwt(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return null;
-      final normalized = base64Url.normalize(parts[1]);
-      final decoded = utf8.decode(base64Url.decode(normalized));
-      final payload = jsonDecode(decoded);
-      if (payload is Map && payload['user_id'] is String) {
-        return payload['user_id'] as String;
-      }
-    } catch (_) {
-      return null;
-    }
-    return null;
+    return JwtUtils.extractUserId(token);
   }
 
   String _displayName() {
@@ -1429,89 +792,5 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     return raw.length >= 8
         ? raw.substring(0, 8).toUpperCase()
         : raw.toUpperCase();
-  }
-}
-
-class _StatusDot extends StatefulWidget {
-  const _StatusDot({required this.live, this.small = false});
-  final bool live;
-  final bool small;
-
-  @override
-  State<_StatusDot> createState() => _StatusDotState();
-}
-
-class _StatusDotState extends State<_StatusDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat(reverse: true);
-  late final Animation<double> _opacity = Tween(
-    begin: 1.0,
-    end: 0.35,
-  ).animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut));
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dot = Container(
-      width: widget.small ? 7 : 8,
-      height: widget.small ? 7 : 8,
-      decoration: BoxDecoration(
-        color: widget.live ? AppColors.brand : AppColors.accent,
-        shape: BoxShape.circle,
-      ),
-    );
-    if (!widget.live) return dot;
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, _) => Opacity(opacity: _opacity.value, child: dot),
-    );
-  }
-}
-
-class _MapFab extends StatelessWidget {
-  const _MapFab({
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-    this.active = false,
-  });
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: active ? AppColors.brand : Colors.white,
-      shape: const CircleBorder(),
-      elevation: 3,
-      shadowColor: Colors.black.withValues(alpha: 0.2),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Tooltip(
-          message: tooltip,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(
-              icon,
-              size: 20,
-              color: active ? Colors.white : AppColors.ink,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -14,20 +14,20 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] as String? ?? '',
-        email: json['email'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        role: json['role'] as String? ?? 'user',
-        createdAt: json['created_at'] as String?,
-      );
+    id: json['id'] as String? ?? '',
+    email: json['email'] as String? ?? '',
+    name: json['name'] as String? ?? '',
+    role: json['role'] as String? ?? 'user',
+    createdAt: json['created_at'] as String?,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'email': email,
-        'name': name,
-        'role': role,
-        if (createdAt != null) 'created_at': createdAt,
-      };
+    'id': id,
+    'email': email,
+    'name': name,
+    'role': role,
+    if (createdAt != null) 'created_at': createdAt,
+  };
 
   UserModel copyWith({
     String? id,
@@ -35,14 +35,13 @@ class UserModel {
     String? name,
     String? role,
     String? createdAt,
-  }) =>
-      UserModel(
-        id: id ?? this.id,
-        email: email ?? this.email,
-        name: name ?? this.name,
-        role: role ?? this.role,
-        createdAt: createdAt ?? this.createdAt,
-      );
+  }) => UserModel(
+    id: id ?? this.id,
+    email: email ?? this.email,
+    name: name ?? this.name,
+    role: role ?? this.role,
+    createdAt: createdAt ?? this.createdAt,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -80,8 +79,8 @@ class AuthResponseModel {
       );
 
   Map<String, dynamic> toJson() => {
-        'access_token': accessToken,
-        if (refreshToken != null) 'refresh_token': refreshToken,
-        if (user != null) 'user': user!.toJson(),
-      };
+    'access_token': accessToken,
+    if (refreshToken != null) 'refresh_token': refreshToken,
+    if (user != null) 'user': user!.toJson(),
+  };
 }

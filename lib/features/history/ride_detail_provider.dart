@@ -16,17 +16,16 @@ class RideDetailState {
   });
 }
 
-final rideDetailProvider = FutureProvider.family<RideDetailState, RideHistoryItem>(
-  (ref, item) async {
-    final repo = ref.read(rideRepositoryProvider);
-    final results = await Future.wait([
-      repo.getRideTrail(item.id),
-      repo.getRideMembers(item.id),
-    ]);
-    return RideDetailState(
-      item: item,
-      trail: results[0] as List<RideTrailPoint>,
-      members: results[1] as List<RideMember>,
-    );
-  },
-);
+final rideDetailProvider =
+    FutureProvider.family<RideDetailState, RideHistoryItem>((ref, item) async {
+      final repo = ref.read(rideRepositoryProvider);
+      final results = await Future.wait([
+        repo.getRideTrail(item.id),
+        repo.getRideMembers(item.id),
+      ]);
+      return RideDetailState(
+        item: item,
+        trail: results[0] as List<RideTrailPoint>,
+        members: results[1] as List<RideMember>,
+      );
+    });

@@ -18,7 +18,9 @@ class AppException implements Exception {
       case DioExceptionType.receiveTimeout:
         return const AppException('Koneksi ke server timeout. Coba lagi.');
       case DioExceptionType.connectionError:
-        return const AppException('Tidak bisa menghubungi server. Cek koneksi kamu.');
+        return const AppException(
+          'Tidak bisa menghubungi server. Cek koneksi kamu.',
+        );
       case DioExceptionType.cancel:
         return const AppException('Permintaan dibatalkan.');
       case DioExceptionType.badCertificate:
@@ -39,16 +41,30 @@ class AppException implements Exception {
     final status = error.response?.statusCode;
     switch (status) {
       case 401:
-        return AppException('Sesi berakhir. Silakan login ulang.', statusCode: status);
+        return AppException(
+          'Sesi berakhir. Silakan login ulang.',
+          statusCode: status,
+        );
       case 403:
-        return AppException('Kamu tidak punya akses ke fitur ini.', statusCode: status);
+        return AppException(
+          'Kamu tidak punya akses ke fitur ini.',
+          statusCode: status,
+        );
       case 404:
-        return AppException('Data atau endpoint tidak ditemukan (404).', statusCode: status);
+        return AppException(
+          'Data atau endpoint tidak ditemukan (404).',
+          statusCode: status,
+        );
       case 429:
-        return AppException('Terlalu banyak permintaan. Tunggu sebentar.', statusCode: status);
+        return AppException(
+          'Terlalu banyak permintaan. Tunggu sebentar.',
+          statusCode: status,
+        );
       default:
         return AppException(
-          status != null ? 'Server error ($status).' : 'Terjadi kesalahan jaringan.',
+          status != null
+              ? 'Server error ($status).'
+              : 'Terjadi kesalahan jaringan.',
           statusCode: status,
         );
     }
@@ -56,7 +72,9 @@ class AppException implements Exception {
 
   factory AppException.unknown([Object? error]) {
     return AppException(
-      error != null ? 'Terjadi kesalahan: $error' : 'Terjadi kesalahan tak terduga.',
+      error != null
+          ? 'Terjadi kesalahan: $error'
+          : 'Terjadi kesalahan tak terduga.',
     );
   }
 }

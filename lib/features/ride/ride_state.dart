@@ -16,5 +16,6 @@ class RideStateNotifier extends Notifier<RideModel?> {
   }
 }
 
-final rideStateProvider =
-    NotifierProvider<RideStateNotifier, RideModel?>(RideStateNotifier.new);
+final rideStateProvider = NotifierProvider<RideStateNotifier, RideModel?>(
+  RideStateNotifier.new,
+);

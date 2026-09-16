@@ -22,15 +22,12 @@ class AuthRepository {
   Future<AuthSession> login({
     required String email,
     required String password,
-  }) =>
-      _authenticate(
-        () => service.login(email: email, password: password),
-        fallback: 'Login gagal.',
-      );
+  }) => _authenticate(
+    () => service.login(email: email, password: password),
+    fallback: 'Login gagal.',
+  );
 
-  Future<AuthSession> loginWithGoogle({
-    required String idToken,
-  }) =>
+  Future<AuthSession> loginWithGoogle({required String idToken}) =>
       _authenticate(
         () => service.googleLogin(idToken: idToken),
         fallback: 'Login Google gagal.',
@@ -40,11 +37,10 @@ class AuthRepository {
     required String name,
     required String email,
     required String password,
-  }) =>
-      _authenticate(
-        () => service.register(name: name, email: email, password: password),
-        fallback: 'Registrasi gagal.',
-      );
+  }) => _authenticate(
+    () => service.register(name: name, email: email, password: password),
+    fallback: 'Registrasi gagal.',
+  );
 
   Future<UserModel> getMe() async {
     try {
@@ -69,7 +65,9 @@ class AuthRepository {
       final response = await service.updateMe(name: name);
       final data = response.data;
       if (data is! Map<String, dynamic>) {
-        throw const AppException('Gagal memperbarui nama: respons tidak dikenal.');
+        throw const AppException(
+          'Gagal memperbarui nama: respons tidak dikenal.',
+        );
       }
       return UserModel.fromJson(data);
     } on DioException catch (e) {

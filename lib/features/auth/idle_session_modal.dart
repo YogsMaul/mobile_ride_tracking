@@ -112,9 +112,8 @@ class _IdleSessionModalState extends State<IdleSessionModal> {
               Text(
                 'Kamu diam sebentar. Lanjutkan sesi biar gak ke-logout?',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
-                    ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: AppColors.muted),
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
@@ -155,4 +154,3 @@ class _IdleSessionModalState extends State<IdleSessionModal> {
     );
   }
 }
-

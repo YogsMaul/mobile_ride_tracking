@@ -11,11 +11,11 @@ class RideTrailPoint {
     required this.timestamp,
   });
 
-  factory RideTrailPoint.fromJson(Map<String, dynamic> json) =>
-      RideTrailPoint(
-        lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
-        lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
-        timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
-            DateTime.now(),
-      );
+  factory RideTrailPoint.fromJson(Map<String, dynamic> json) => RideTrailPoint(
+    lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
+    lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
+    timestamp:
+        DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
+        DateTime.now(),
+  );
 }

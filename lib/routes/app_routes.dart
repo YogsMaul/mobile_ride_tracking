@@ -10,6 +10,7 @@ import '../features/profile/profile_screen.dart';
 import '../features/ride/home/home_screen.dart';
 import '../features/ride/home/scan_qr_screen.dart';
 import '../features/ride/ride_map/ride_map_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../core/widgets/shell_scaffold.dart';
 
 class AppRoutes {
@@ -23,27 +24,30 @@ class AppRoutes {
   static const String scanQr = '/scan-qr';
   static const String ride = '/ride';
   static const String rideDetail = '/ride-detail';
+  static const String settings = '/settings';
 
   static Map<String, WidgetBuilder> get routes => {
-        login: (context) => const LoginScreen(),
-        register: (context) => const RegisterScreen(),
-        forgotPassword: (context) => const ForgotPasswordScreen(),
-        home: (context) => const AppShell(),
-        scanQr: (context) => const ScanQrScreen(),
-        rideDetail: (context) {
-          final item = ModalRoute.of(context)!.settings.arguments as RideHistoryItem;
-          return RideDetailScreen(item: item);
-        },
-        ride: (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>;
-          return RideMapScreen(
-            rideId: args['rideId'] as String,
-            inviteCode: args['inviteCode'] as String?,
-            rideName: args['rideName'] as String?,
-          );
-        },
-      };
+    login: (context) => const LoginScreen(),
+    register: (context) => const RegisterScreen(),
+    forgotPassword: (context) => const ForgotPasswordScreen(),
+    home: (context) => const AppShell(),
+    scanQr: (context) => const ScanQrScreen(),
+    rideDetail: (context) {
+      final item =
+          ModalRoute.of(context)!.settings.arguments as RideHistoryItem;
+      return RideDetailScreen(item: item);
+    },
+    ride: (context) {
+      final args =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      return RideMapScreen(
+        rideId: args['rideId'] as String,
+        inviteCode: args['inviteCode'] as String?,
+        rideName: args['rideName'] as String?,
+      );
+    },
+    settings: (context) => const SettingsScreen(),
+  };
 }
 
 class AppShell extends StatelessWidget {
@@ -52,11 +56,7 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ShellScaffold(
-      pages: [
-        HomeScreen(),
-        HistoryScreen(),
-        ProfileScreen(),
-      ],
+      pages: [HomeScreen(), HistoryScreen(), ProfileScreen()],
     );
   }
 }

@@ -73,12 +73,14 @@ class RideRepository {
   /// participant_count dan role (host/joined).
   Future<List<RideHistoryItem>> getMyRides({
     String? status,
+    String? search,
     int limit = 20,
     int offset = 0,
   }) async {
     try {
       final response = await service.getMyRides(
         status: status,
+        search: search,
         limit: limit,
         offset: offset,
       );

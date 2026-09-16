@@ -1,6 +1,7 @@
 class RideHistoryItem {
   final String id;
   final String title;
+  final String? destName;
   final DateTime date;
   final int participantCount;
   final RideRole role;
@@ -11,6 +12,7 @@ class RideHistoryItem {
   const RideHistoryItem({
     required this.id,
     required this.title,
+    this.destName,
     required this.date,
     required this.participantCount,
     required this.role,
@@ -22,9 +24,11 @@ class RideHistoryItem {
   factory RideHistoryItem.fromJson(Map<String, dynamic> json) =>
       RideHistoryItem(
         id: json['id'] as String? ?? '',
-        title: (json['title'] as String?) ??
+        title:
+            (json['title'] as String?) ??
             (json['name'] as String?) ??
             'Ride tanpa nama',
+        destName: json['dest_name'] as String?,
         date: _parseDate(json['date'] ?? json['created_at']),
         participantCount: json['participant_count'] as int? ?? 0,
         role: _parseRole(json['role']),
@@ -34,41 +38,45 @@ class RideHistoryItem {
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'date': date.toIso8601String(),
-        'participant_count': participantCount,
-        'role': role.name,
-        'started_at': startedAt.toIso8601String(),
-        'ended_at': endedAt.toIso8601String(),
-        'status': status.name,
-      };
+    'id': id,
+    'title': title,
+    if (destName != null) 'dest_name': destName,
+    'date': date.toIso8601String(),
+    'participant_count': participantCount,
+    'role': role.name,
+    'started_at': startedAt.toIso8601String(),
+    'ended_at': endedAt.toIso8601String(),
+    'status': status.name,
+  };
 
   RideHistoryItem copyWith({
     String? id,
     String? title,
+    String? destName,
     DateTime? date,
     int? participantCount,
     RideRole? role,
     DateTime? startedAt,
     DateTime? endedAt,
     RideStatus? status,
-  }) =>
-      RideHistoryItem(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        date: date ?? this.date,
-        participantCount: participantCount ?? this.participantCount,
-        role: role ?? this.role,
-        startedAt: startedAt ?? this.startedAt,
-        endedAt: endedAt ?? this.endedAt,
-        status: status ?? this.status,
-      );
+  }) => RideHistoryItem(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    destName: destName ?? this.destName,
+    date: date ?? this.date,
+    participantCount: participantCount ?? this.participantCount,
+    role: role ?? this.role,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt ?? this.endedAt,
+    status: status ?? this.status,
+  );
 
   String get timeRange {
     // Kalau belum pernah dimulai (tahun 1970 = fallback parse null), tampilkan status
     if (startedAt.year <= 1970) {
-      return status == RideStatus.cancelled ? 'Belum sempat dimulai' : 'Belum dimulai';
+      return status == RideStatus.cancelled
+          ? 'Belum sempat dimulai'
+          : 'Belum dimulai';
     }
     String fmt(DateTime t) =>
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
@@ -93,6 +101,7 @@ class RideHistoryItem {
           runtimeType == other.runtimeType &&
           id == other.id &&
           title == other.title &&
+          destName == other.destName &&
           date == other.date &&
           participantCount == other.participantCount &&
           role == other.role &&
@@ -102,15 +111,16 @@ class RideHistoryItem {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        title,
-        date,
-        participantCount,
-        role,
-        startedAt,
-        endedAt,
-        status,
-      );
+    id,
+    title,
+    destName,
+    date,
+    participantCount,
+    role,
+    startedAt,
+    endedAt,
+    status,
+  );
 }
 
 enum RideRole { host, joined }

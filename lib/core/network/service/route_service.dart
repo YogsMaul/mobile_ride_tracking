@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -61,20 +62,18 @@ class RouteService {
   final Dio _dio;
 
   RouteService([Dio? dio])
-      : _dio = dio ??
-            Dio(
-              BaseOptions(
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-              ),
-            );
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+            ),
+          );
 
   Options get _osmOptions => Options(
-        headers: {
-          'User-Agent': 'RideTrackingApp/1.0',
-          'Accept-Language': 'id,en',
-        },
-      );
+    headers: {'User-Agent': 'RideTrackingApp/1.0', 'Accept-Language': 'id,en'},
+  );
 
   /// Mencari tempat berdasarkan teks input pengguna via Nominatim OpenStreetMap (gratis).
   Future<List<PlaceSearchResult>> searchPlaces(String query) async {
@@ -124,8 +123,13 @@ class RouteService {
       if (data is Map<String, dynamic>) {
         final address = data['address'] as Map<String, dynamic>?;
         if (address != null) {
-          final road = address['road'] ?? address['suburb'] ?? address['neighbourhood'];
-          final city = address['city'] ?? address['town'] ?? address['county'] ?? address['state'];
+          final road =
+              address['road'] ?? address['suburb'] ?? address['neighbourhood'];
+          final city =
+              address['city'] ??
+              address['town'] ??
+              address['county'] ??
+              address['state'];
           if (road != null && city != null) {
             return '$road, $city';
           }

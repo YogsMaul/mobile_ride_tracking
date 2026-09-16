@@ -11,15 +11,15 @@ class DioClient {
   AuthErrorCallback? onAuthError;
 
   DioClient([SecureStorageService? storage])
-      : _storage = storage ?? const SecureStorageService(),
-        _dio = Dio(
-          BaseOptions(
-            baseUrl: ApiConstants.baseUrl,
-            connectTimeout: const Duration(seconds: 10),
-            receiveTimeout: const Duration(seconds: 10),
-            headers: {'Content-Type': 'application/json'},
-          ),
-        ) {
+    : _storage = storage ?? const SecureStorageService(),
+      _dio = Dio(
+        BaseOptions(
+          baseUrl: ApiConstants.baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+          headers: {'Content-Type': 'application/json'},
+        ),
+      ) {
     _dio.interceptors.add(
       AuthInterceptor(
         _storage,

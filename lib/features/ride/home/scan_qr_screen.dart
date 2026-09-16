@@ -80,14 +80,9 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _onDetect),
           // Dark overlay with transparent cutout in the center
-          CustomPaint(
-            painter: _ScannerOverlayPainter(),
-          ),
+          CustomPaint(painter: _ScannerOverlayPainter()),
           // Instructions at bottom
           Positioned(
             left: 24,
@@ -102,7 +97,9 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.65),
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -164,20 +161,52 @@ class _ScannerOverlayPainter extends CustomPainter {
     const cornerLength = 28.0;
 
     // Top-left
-    canvas.drawLine(Offset(left, top + cornerLength), Offset(left, top), borderPaint);
-    canvas.drawLine(Offset(left, top), Offset(left + cornerLength, top), borderPaint);
+    canvas.drawLine(
+      Offset(left, top + cornerLength),
+      Offset(left, top),
+      borderPaint,
+    );
+    canvas.drawLine(
+      Offset(left, top),
+      Offset(left + cornerLength, top),
+      borderPaint,
+    );
 
     // Top-right
-    canvas.drawLine(Offset(left + scanSize - cornerLength, top), Offset(left + scanSize, top), borderPaint);
-    canvas.drawLine(Offset(left + scanSize, top), Offset(left + scanSize, top + cornerLength), borderPaint);
+    canvas.drawLine(
+      Offset(left + scanSize - cornerLength, top),
+      Offset(left + scanSize, top),
+      borderPaint,
+    );
+    canvas.drawLine(
+      Offset(left + scanSize, top),
+      Offset(left + scanSize, top + cornerLength),
+      borderPaint,
+    );
 
     // Bottom-left
-    canvas.drawLine(Offset(left, top + scanSize - cornerLength), Offset(left, top + scanSize), borderPaint);
-    canvas.drawLine(Offset(left, top + scanSize), Offset(left + cornerLength, top + scanSize), borderPaint);
+    canvas.drawLine(
+      Offset(left, top + scanSize - cornerLength),
+      Offset(left, top + scanSize),
+      borderPaint,
+    );
+    canvas.drawLine(
+      Offset(left, top + scanSize),
+      Offset(left + cornerLength, top + scanSize),
+      borderPaint,
+    );
 
     // Bottom-right
-    canvas.drawLine(Offset(left + scanSize - cornerLength, top + scanSize), Offset(left + scanSize, top + scanSize), borderPaint);
-    canvas.drawLine(Offset(left + scanSize, top + scanSize), Offset(left + scanSize, top + scanSize - cornerLength), borderPaint);
+    canvas.drawLine(
+      Offset(left + scanSize - cornerLength, top + scanSize),
+      Offset(left + scanSize, top + scanSize),
+      borderPaint,
+    );
+    canvas.drawLine(
+      Offset(left + scanSize, top + scanSize),
+      Offset(left + scanSize, top + scanSize - cornerLength),
+      borderPaint,
+    );
   }
 
   @override

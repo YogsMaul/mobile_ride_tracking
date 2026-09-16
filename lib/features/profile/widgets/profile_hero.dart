@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -32,9 +33,7 @@ class ProfileHero extends StatelessWidget {
             children: [
               // Orbit ring with decorative icons
               const Positioned.fill(
-                child: CustomPaint(
-                  painter: _OrbitPainter(),
-                ),
+                child: CustomPaint(painter: _OrbitPainter()),
               ),
               // Inner avatar
               Container(
@@ -73,7 +72,8 @@ class ProfileHero extends StatelessWidget {
                   elevation: 2,
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: onEditName ??
+                    onTap:
+                        onEditName ??
                         () => AppToast.info(context, 'Edit nama segera hadir.'),
                     child: const SizedBox(
                       width: 26,
@@ -96,11 +96,11 @@ class ProfileHero extends StatelessWidget {
           name,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-                letterSpacing: -0.2,
-              ),
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+            letterSpacing: -0.2,
+          ),
         ),
         const SizedBox(height: 6),
         // Role badge
@@ -138,10 +138,10 @@ class ProfileHero extends StatelessWidget {
           '“Setiap perjalanan punya cerita.”',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 10.5,
-                color: AppColors.muted,
-                fontStyle: FontStyle.italic,
-              ),
+            fontSize: 10.5,
+            color: AppColors.muted,
+            fontStyle: FontStyle.italic,
+          ),
         ),
       ],
     );
@@ -150,7 +150,10 @@ class ProfileHero extends StatelessWidget {
   String _initialsOf(String raw) {
     final cleaned = raw.trim();
     if (cleaned.isEmpty || cleaned == '—') return 'R';
-    final parts = cleaned.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = cleaned
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return 'R';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
@@ -182,9 +185,30 @@ class _OrbitPainter extends CustomPainter {
     }
 
     // 3 Decorative orbit dots (star, pin, bike)
-    _drawOrbitIcon(canvas, center, r, -0.6, AppColors.accent, Icons.star_rounded);
-    _drawOrbitIcon(canvas, center, r, 0.9, AppColors.brand, Icons.location_on_rounded);
-    _drawOrbitIcon(canvas, center, r, 2.5, AppColors.brandDark, Icons.two_wheeler_rounded);
+    _drawOrbitIcon(
+      canvas,
+      center,
+      r,
+      -0.6,
+      AppColors.accent,
+      Icons.star_rounded,
+    );
+    _drawOrbitIcon(
+      canvas,
+      center,
+      r,
+      0.9,
+      AppColors.brand,
+      Icons.location_on_rounded,
+    );
+    _drawOrbitIcon(
+      canvas,
+      center,
+      r,
+      2.5,
+      AppColors.brandDark,
+      Icons.two_wheeler_rounded,
+    );
   }
 
   void _drawOrbitIcon(
@@ -195,7 +219,10 @@ class _OrbitPainter extends CustomPainter {
     Color color,
     IconData icon,
   ) {
-    final p = Offset(center.dx + r * math.cos(angle), center.dy + r * math.sin(angle));
+    final p = Offset(
+      center.dx + r * math.cos(angle),
+      center.dy + r * math.sin(angle),
+    );
     canvas.drawCircle(p, 8, Paint()..color = Colors.white);
     canvas.drawCircle(
       p,

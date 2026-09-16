@@ -10,12 +10,12 @@ class GoogleAuthService {
   final GoogleSignIn _googleSignIn;
 
   GoogleAuthService({GoogleSignIn? googleSignIn})
-      : _googleSignIn = googleSignIn ??
-            GoogleSignIn(
-              serverClientId:
-                  '329486187244-gho6hsd1othl18ejq82gk2joqs6omc9h.apps.googleusercontent.com',
-              scopes: ['email', 'profile'],
-            );
+    : _googleSignIn =
+          googleSignIn ??
+          GoogleSignIn(
+            serverClientId: '329486187244-gho6hsd1othl18ejq82gk2joqs6omc9h.apps.googleusercontent.com',
+            scopes: ['email', 'profile'],
+          );
 
   /// Buka sheet picker Google, dapatkan `id_token` buat ditukar di backend.
   /// Return `null` kalau user batal pilih akun.

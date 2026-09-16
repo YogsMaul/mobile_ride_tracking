@@ -54,12 +54,11 @@ List<Marker> buildRideMarkers({
     final raw = (names?[userId] ?? '').trim();
     final label = raw.isEmpty
         ? (userId.length >= 4
-            ? userId.substring(0, 4).toUpperCase()
-            : userId.toUpperCase())
-        : (raw.split(RegExp(r'\s+')).firstWhere(
-            (p) => p.isNotEmpty,
-            orElse: () => raw,
-          ));
+              ? userId.substring(0, 4).toUpperCase()
+              : userId.toUpperCase())
+        : (raw
+              .split(RegExp(r'\s+'))
+              .firstWhere((p) => p.isNotEmpty, orElse: () => raw));
     markers.add(
       Marker(
         point: rider.position,
@@ -116,7 +115,9 @@ class DestinationPinMarker extends StatelessWidget {
           preview ? Icons.place_rounded : Icons.flag_rounded,
           color: color,
           size: 32,
-          shadows: const [Shadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))],
+          shadows: const [
+            Shadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+          ],
         ),
       ],
     );
@@ -182,7 +183,10 @@ class RiderAvatarMarker extends StatelessWidget {
                       decoration: const BoxDecoration(
                         border: Border(
                           left: BorderSide(color: Colors.transparent, width: 6),
-                          right: BorderSide(color: Colors.transparent, width: 6),
+                          right: BorderSide(
+                            color: Colors.transparent,
+                            width: 6,
+                          ),
                           bottom: BorderSide(color: Colors.white, width: 8),
                         ),
                       ),
@@ -233,12 +237,14 @@ class _PulseRingState extends State<_PulseRing>
     vsync: this,
     duration: const Duration(milliseconds: 1500),
   )..repeat();
-  late final Animation<double> _scale = Tween(begin: 0.7, end: 1.35).animate(
-    CurvedAnimation(parent: _c, curve: Curves.easeOut),
-  );
-  late final Animation<double> _opacity = Tween(begin: 0.55, end: 0.0).animate(
-    CurvedAnimation(parent: _c, curve: Curves.easeOut),
-  );
+  late final Animation<double> _scale = Tween(
+    begin: 0.7,
+    end: 1.35,
+  ).animate(CurvedAnimation(parent: _c, curve: Curves.easeOut));
+  late final Animation<double> _opacity = Tween(
+    begin: 0.55,
+    end: 0.0,
+  ).animate(CurvedAnimation(parent: _c, curve: Curves.easeOut));
 
   @override
   void dispose() {
@@ -282,9 +288,10 @@ class _BounceState extends State<_Bounce> with SingleTickerProviderStateMixin {
     vsync: this,
     duration: const Duration(milliseconds: 550),
   );
-  late final Animation<double> _dy = Tween(begin: 0.0, end: -3.0).animate(
-    CurvedAnimation(parent: _c, curve: Curves.easeInOut),
-  );
+  late final Animation<double> _dy = Tween(
+    begin: 0.0,
+    end: -3.0,
+  ).animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut));
 
   @override
   void initState() {

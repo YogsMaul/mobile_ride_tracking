@@ -33,7 +33,7 @@ class AccountInfoCard extends StatelessWidget {
             children: [
               Container(
                 width: 34,
-                  height: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   color: AppColors.brandSoft,
                   borderRadius: BorderRadius.circular(10),
@@ -48,10 +48,8 @@ class AccountInfoCard extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 10,
-                            color: AppColors.muted,
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(fontSize: 10, color: AppColors.muted),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -59,10 +57,10 @@ class AccountInfoCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
-                          ),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                      ),
                     ),
                   ],
                 ),
@@ -100,8 +98,9 @@ class ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = isDestructive ? AppColors.warnFill : AppColors.surface;
     final fg = isDestructive ? AppColors.warn : AppColors.ink;
-    final iconBoxBg =
-        isDestructive ? Colors.white.withValues(alpha: 0.6) : AppColors.brandSoft;
+    final iconBoxBg = isDestructive
+        ? Colors.white.withValues(alpha: 0.6)
+        : AppColors.brandSoft;
     final iconFg = isDestructive ? AppColors.warn : AppColors.brand;
 
     return Material(
@@ -121,7 +120,7 @@ class ActionCard extends StatelessWidget {
             children: [
               Container(
                 width: 34,
-                  height: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   color: iconBoxBg,
                   borderRadius: BorderRadius.circular(10),
@@ -137,18 +136,16 @@ class ActionCard extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: fg,
-                          ),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: fg,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 10.5,
-                            color: AppColors.muted,
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(fontSize: 10.5, color: AppColors.muted),
                     ),
                   ],
                 ),

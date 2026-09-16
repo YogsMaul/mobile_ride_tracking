@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -25,7 +27,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   static const int _pageSize = 20;
 
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _searchDebounce;
   RideHistoryFilter _filter = RideHistoryFilter.all;
+  bool _isSearching = false;
+  String _query = '';
 
   List<RideHistoryItem> _items = [];
   bool _isLoadingFirst = true;
@@ -41,8 +47,35 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchCtrl.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch() {
+    _searchDebounce?.cancel();
+    setState(() {
+      if (_isSearching) {
+        final hadQuery = _query.isNotEmpty;
+        _isSearching = false;
+        _searchCtrl.clear();
+        _query = '';
+        // Query kosong = list yang tampil masih list penuh -> gak perlu fetch.
+        if (hadQuery) _fetchFirstPage(silent: _items.isNotEmpty);
+      } else {
+        _isSearching = true;
+      }
+    });
+  }
+
+  void _onSearchQueryChanged(String q) {
+    setState(() => _query = q);
+    _searchDebounce?.cancel();
+    // Debounce 450ms biar gak nembak API di tiap ketikan huruf
+    _searchDebounce = Timer(const Duration(milliseconds: 450), () {
+      _fetchFirstPage(silent: _items.isNotEmpty);
+    });
   }
 
   void _onScroll() {
@@ -55,16 +88,19 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
   }
 
-  Future<void> _fetchFirstPage() async {
+  Future<void> _fetchFirstPage({bool silent = false}) async {
     setState(() {
-      _isLoadingFirst = true;
-      _items = [];
+      // silent = refresh di belakang layar; list lama tetap tampil,
+      // tanpa full-spinner. Dipakai saat query berubah atau search ditutup.
+      _isLoadingFirst = !silent;
+      _items = silent ? _items : [];
       _hasMore = true;
     });
 
     try {
       final repo = ref.read(rideRepositoryProvider);
       final newItems = await repo.getMyRides(
+        search: _query.trim(),
         limit: _pageSize,
         offset: 0,
       );
@@ -90,6 +126,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     try {
       final repo = ref.read(rideRepositoryProvider);
       final newItems = await repo.getMyRides(
+        search: _query.trim(),
         limit: _pageSize,
         offset: _items.length,
       );
@@ -107,13 +144,19 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   List<RideHistoryItem> _applyFilter(List<RideHistoryItem> items) {
+    final q = _query.trim().toLowerCase();
     return items.where((it) {
-      return switch (_filter) {
+      final matchFilter = switch (_filter) {
         RideHistoryFilter.all => true,
         RideHistoryFilter.host => it.role == RideRole.host,
         RideHistoryFilter.joined => it.role == RideRole.joined,
         RideHistoryFilter.completed => it.status == RideStatus.completed,
       };
+      if (!matchFilter) return false;
+      if (q.isEmpty) return true;
+      final title = it.title.toLowerCase();
+      final dest = (it.destName ?? '').toLowerCase();
+      return title.contains(q) || dest.contains(q);
     }).toList();
   }
 
@@ -138,14 +181,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Future<void> _showResumeDialog(RideHistoryItem item) async {
-    final statusLabel =
-        item.status == RideStatus.active ? 'berjalan' : 'menunggu dimulai';
+    final statusLabel = item.status == RideStatus.active
+        ? 'berjalan'
+        : 'menunggu dimulai';
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Lanjutkan Ride?'),
         content: Text(
           '"${item.title}" masih $statusLabel. '
@@ -170,17 +212,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       ),
     );
     if (ok == true && mounted) {
-      ref.read(rideStateProvider.notifier).setActive(
-            RideModel(
-              id: item.id,
-              name: item.title,
-            ),
-          );
-      Navigator.pushNamed(context, '/ride', arguments: {
-        'rideId': item.id,
-        'inviteCode': null,
-        'rideName': item.title,
-      });
+      ref
+          .read(rideStateProvider.notifier)
+          .setActive(RideModel(id: item.id, name: item.title));
+      Navigator.pushNamed(
+        context,
+        '/ride',
+        arguments: {
+          'rideId': item.id,
+          'inviteCode': null,
+          'rideName': item.title,
+        },
+      );
     }
   }
 
@@ -203,15 +246,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: _isLoadingFirst
+                child: (_isLoadingFirst && !_isSearching)
                     ? const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.brand,
                         ),
                       )
-                    : _items.isEmpty
-                        ? _buildEmptyState()
-                        : _buildDataState(),
+                    : (_items.isEmpty && !_isSearching)
+                    ? _buildEmptyState()
+                    : _buildDataState(),
               ),
             ),
           ),
@@ -227,9 +270,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
-          child: HistoryHeader(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          child: HistoryHeader(
+            isSearching: _isSearching,
+            searchController: _searchCtrl,
+            onToggleSearch: _toggleSearch,
+            onQueryChanged: _onSearchQueryChanged,
+          ),
         ),
         const SizedBox(height: 16),
         Padding(
@@ -241,21 +289,29 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
         const SizedBox(height: 14),
         Expanded(
-          child: filtered.isEmpty
+          child: _isLoadingFirst && _isSearching
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(color: AppColors.brand),
+                  ),
+                )
+              : filtered.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Text(
-                      'Tidak ada riwayat untuk filter ini.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.muted,
-                          ),
+                      _query.trim().isEmpty
+                          ? 'Tidak ada riwayat untuk filter ini.'
+                          : 'Ride "$_query" tidak ditemukan.',
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: AppColors.muted),
                     ),
                   ),
                 )
               : RefreshIndicator(
                   color: AppColors.brand,
-                  onRefresh: _fetchFirstPage,
+                  onRefresh: () => _fetchFirstPage(silent: true),
                   child: ListView.builder(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -289,9 +345,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           children: [
                             Text(
                               dateKey,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,

@@ -92,10 +92,7 @@ class _TopoBackgroundPainter extends CustomPainter {
     required Paint paint,
   }) {
     for (var i = 0; i < rings; i++) {
-      canvas.drawPath(
-        _blob(center, base + i * 24.0, seed + i * 0.35),
-        paint,
-      );
+      canvas.drawPath(_blob(center, base + i * 24.0, seed + i * 0.35), paint);
     }
   }
 
@@ -105,9 +102,9 @@ class _TopoBackgroundPainter extends CustomPainter {
     const n = 8;
     final pts = List<Offset>.generate(n, (i) {
       final a = i * math.pi * 2 / n;
-      final rr = r *
-          (1 + 0.16 * math.sin(a * 2 + seed) +
-              0.10 * math.cos(a * 3 - seed));
+      final rr =
+          r *
+          (1 + 0.16 * math.sin(a * 2 + seed) + 0.10 * math.cos(a * 3 - seed));
       return c + Offset(math.cos(a) * rr, math.sin(a) * rr);
     });
     final path = Path()

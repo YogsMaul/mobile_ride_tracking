@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/storage/secure_storage_service.dart';
 
 /// Status sesi: logged out / logged in / idle warning (perlu konfirmasi user).
@@ -13,7 +14,7 @@ class AuthState extends ChangeNotifier {
   final SecureStorageService _storage;
 
   AuthState([SecureStorageService? storage])
-      : _storage = storage ?? const SecureStorageService();
+    : _storage = storage ?? const SecureStorageService();
 
   AuthStatus get status => _status;
   bool get idleModalOpen => _idleModalOpen;

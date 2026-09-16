@@ -64,9 +64,8 @@ class RideMembersSheet extends StatelessWidget {
                   children: [
                     Text(
                       roomName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -84,7 +83,10 @@ class RideMembersSheet extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isPlanned ? AppColors.accentSoft : AppColors.brandSoft,
                   borderRadius: BorderRadius.circular(AppRadius.full),
@@ -109,9 +111,8 @@ class RideMembersSheet extends StatelessWidget {
             children: [
               Text(
                 'Peserta (${members.length})',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               TextButton.icon(
                 onPressed: onInvite,
@@ -192,10 +193,13 @@ class RideMembersSheet extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppColors.brandSoft,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
                                   border: Border.all(
-                                    color: AppColors.brand.withValues(alpha: 0.3),
+                                    color: AppColors.brand.withValues(
+                                      alpha: 0.3,
+                                    ),
                                   ),
                                 ),
                                 child: const Text(
@@ -211,9 +215,7 @@ class RideMembersSheet extends StatelessWidget {
                           ],
                         ),
                         subtitle: Text(
-                          isRoomMaster
-                              ? 'Pembuat room'
-                              : 'Anggota ride',
+                          isRoomMaster ? 'Pembuat room' : 'Anggota ride',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.muted,

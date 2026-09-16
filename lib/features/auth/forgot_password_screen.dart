@@ -171,8 +171,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           style: IconButton.styleFrom(
                             backgroundColor: AppColors.surface,
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.md),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                               side: const BorderSide(color: AppColors.line),
                             ),
                           ),
@@ -180,7 +179,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         const SizedBox(width: AppSpacing.md),
                         Text(
                           'Lupa Password',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -214,8 +214,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     const SizedBox(height: AppSpacing.md),
                     Center(
                       child: TextButton(
-                        onPressed:
-                            _isLoading ? null : () => Navigator.pop(context),
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.pop(context),
                         child: const Text('Kembali ke halaman Masuk'),
                       ),
                     ),
@@ -237,18 +238,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Text(
             'Kirim kode OTP',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(context).textTheme.headlineMedium
+                ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
             'Masukkan email akun kamu untuk menerima kode verifikasi 6 digit.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.muted,
-                  height: 1.4,
-                ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: AppColors.muted, height: 1.4),
           ),
           const Spacer(),
           TextFormField(
@@ -259,8 +256,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             decoration: const InputDecoration(
               labelText: 'Email',
               hintText: 'nama@email.com',
-              prefixIcon: Icon(Icons.alternate_email,
-                  color: AppColors.muted, size: 20),
+              prefixIcon: Icon(
+                Icons.alternate_email,
+                color: AppColors.muted,
+                size: 20,
+              ),
             ),
             validator: AppValidators.email,
             onFieldSubmitted: (_) => _isLoading ? null : _requestOtp(),
@@ -292,17 +292,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Text(
             'Verifikasi OTP',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(context).textTheme.headlineMedium
+                ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
             'Kode dikirim ke ${_emailController.text}.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.muted,
-                ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: AppColors.muted),
           ),
           if (_devOtp != null) ...[
             const SizedBox(height: 6),
@@ -315,8 +312,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline,
-                      size: 14, color: AppColors.accent),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: AppColors.accent,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -383,18 +383,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Text(
             'Buat password baru',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(context).textTheme.headlineMedium
+                ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 2),
           Text(
             'Minimal 8 karakter: huruf besar, kecil, dan angka.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.muted,
-                  fontSize: 11,
-                ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: AppColors.muted, fontSize: 11),
           ),
           const SizedBox(height: 10),
           TextFormField(
@@ -403,8 +399,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             onChanged: (v) => setState(() => _newPassword = v),
             decoration: InputDecoration(
               labelText: 'Password baru',
-              prefixIcon: const Icon(Icons.lock_outline,
-                  color: AppColors.muted, size: 20),
+              prefixIcon: const Icon(
+                Icons.lock_outline,
+                color: AppColors.muted,
+                size: 20,
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureNew
@@ -427,8 +426,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             obscureText: _obscureConfirm,
             decoration: InputDecoration(
               labelText: 'Konfirmasi password',
-              prefixIcon: const Icon(Icons.lock_reset,
-                  color: AppColors.muted, size: 20),
+              prefixIcon: const Icon(
+                Icons.lock_reset,
+                color: AppColors.muted,
+                size: 20,
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureConfirm

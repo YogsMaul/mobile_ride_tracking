@@ -27,12 +27,12 @@ class HistoryEmptyState extends StatelessWidget {
         Text(
           'Riwayat belum tersedia',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-                letterSpacing: -0.3,
-                color: AppColors.ink,
-              ),
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            height: 1.3,
+            letterSpacing: -0.3,
+            color: AppColors.ink,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -43,10 +43,8 @@ class HistoryEmptyState extends StatelessWidget {
             'perjalanan sebelumnya — jarak, kecepatan, dan rute — '
             'akan nongol di sini.',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.5,
-                  color: AppColors.muted,
-                ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(height: 1.5, color: AppColors.muted),
           ),
         ),
       ],
@@ -70,10 +68,16 @@ class _EmptyRoutePainter extends CustomPainter {
       ..strokeWidth = 2.6;
     canvas.drawCircle(clockCenter, clockR, outline);
     // Jarum jam & menit
-    canvas.drawLine(clockCenter,
-        clockCenter + Offset(0, -clockR * 0.55), outline..strokeWidth = 2.2);
-    canvas.drawLine(clockCenter,
-        clockCenter + Offset(clockR * 0.5, clockR * 0.18), outline);
+    canvas.drawLine(
+      clockCenter,
+      clockCenter + Offset(0, -clockR * 0.55),
+      outline..strokeWidth = 2.2,
+    );
+    canvas.drawLine(
+      clockCenter,
+      clockCenter + Offset(clockR * 0.5, clockR * 0.18),
+      outline,
+    );
 
     // --- Dashed route (clock → flag) ---
     final routePaint = Paint()
@@ -102,8 +106,13 @@ class _EmptyRoutePainter extends CustomPainter {
 
     // --- Finish flag (kanan, tiang + bendera amber) ---
     final pole = end + const Offset(0, -6);
-    canvas.drawLine(pole, pole + const Offset(0, 52),
-        Paint()..color = AppColors.brandDark..strokeWidth = 2.6);
+    canvas.drawLine(
+      pole,
+      pole + const Offset(0, 52),
+      Paint()
+        ..color = AppColors.brandDark
+        ..strokeWidth = 2.6,
+    );
     final flag = Path()
       ..moveTo(pole.dx, pole.dy + 4)
       ..lineTo(pole.dx + 26, pole.dy + 12)
@@ -128,8 +137,11 @@ class _EmptyRoutePainter extends CustomPainter {
     );
   }
 
-  Path _dashPath(Path source,
-      {required double dashLength, required double gapLength}) {
+  Path _dashPath(
+    Path source, {
+    required double dashLength,
+    required double gapLength,
+  }) {
     final dest = Path();
     for (final metric in source.computeMetrics()) {
       var dist = 0.0;

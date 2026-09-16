@@ -9,7 +9,6 @@ import '../../core/utils/validators.dart';
 import '../../core/widgets/app_toast.dart';
 import './auth_state.dart';
 
-
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -123,8 +122,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.brandDark
-                                        .withValues(alpha: 0.22),
+                                    color: AppColors.brandDark.withValues(
+                                      alpha: 0.22,
+                                    ),
                                     blurRadius: 18,
                                     offset: const Offset(0, 6),
                                   ),
@@ -139,16 +139,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const SizedBox(height: AppSpacing.lg),
                             Text(
                               'Ride Tracking',
-                              style:
-                                  Theme.of(context).textTheme.displaySmall,
+                              style: Theme.of(context).textTheme.displaySmall,
                             ),
                             const SizedBox(height: AppSpacing.xs),
                             Text(
                               'Pantau perjalanan konvoi\nsecara real-time.',
                               textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(color: AppColors.muted),
                             ),
                           ],
@@ -164,15 +161,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             bottom: viewInsets.bottom,
                           ),
                           child: ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(maxWidth: 420),
+                            constraints: const BoxConstraints(maxWidth: 420),
                             child: Card(
                               elevation: 8,
-                              shadowColor:
-                                  Colors.black.withValues(alpha: 0.12),
+                              shadowColor: Colors.black.withValues(alpha: 0.12),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.xl),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.xl,
+                                ),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.all(AppSpacing.xl),
@@ -194,9 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium
-                                            ?.copyWith(
-                                              color: AppColors.muted,
-                                            ),
+                                            ?.copyWith(color: AppColors.muted),
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
                                       TextFormField(
@@ -205,16 +199,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           labelText: 'Email',
                                           hintText: 'nama@email.com',
                                           prefixIcon: Icon(
-                                              Icons.alternate_email,
-                                              color: AppColors.muted,
-                                              size: 20),
+                                            Icons.alternate_email,
+                                            color: AppColors.muted,
+                                            size: 20,
+                                          ),
                                         ),
                                         keyboardType:
                                             TextInputType.emailAddress,
-                                        textInputAction:
-                                            TextInputAction.next,
+                                        textInputAction: TextInputAction.next,
                                         autofillHints: const [
-                                          AutofillHints.email
+                                          AutofillHints.email,
                                         ],
                                         validator: AppValidators.email,
                                       ),
@@ -224,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         obscureText: _obscure,
                                         textInputAction: TextInputAction.done,
                                         autofillHints: const [
-                                          AutofillHints.password
+                                          AutofillHints.password,
                                         ],
                                         onFieldSubmitted: (_) =>
                                             _isLoading ? null : _login(),
@@ -232,24 +226,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           labelText: 'Password',
                                           hintText: 'Masukkan password',
                                           prefixIcon: const Icon(
-                                              Icons.lock_outline,
-                                              color: AppColors.muted,
-                                              size: 20),
+                                            Icons.lock_outline,
+                                            color: AppColors.muted,
+                                            size: 20,
+                                          ),
                                           suffixIcon: IconButton(
                                             icon: Icon(
                                               _obscure
-                                                  ? Icons
-                                                      .visibility_outlined
+                                                  ? Icons.visibility_outlined
                                                   : Icons
-                                                      .visibility_off_outlined,
+                                                        .visibility_off_outlined,
                                               color: AppColors.muted,
                                               size: 20,
                                             ),
                                             onPressed: () => setState(
-                                                () => _obscure = !_obscure),
+                                              () => _obscure = !_obscure,
+                                            ),
                                           ),
                                         ),
-                                        validator: (v) => AppValidators.requiredField(v, 'Password'),
+                                        validator: (v) =>
+                                            AppValidators.requiredField(
+                                              v,
+                                              'Password',
+                                            ),
                                       ),
                                       const SizedBox(height: 4),
                                       Align(
@@ -267,8 +266,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               vertical: 2,
                                             ),
                                             minimumSize: Size.zero,
-                                            tapTargetSize:
-                                                MaterialTapTargetSize.shrinkWrap,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
                                           ),
                                           child: Text(
                                             'Lupa password?',
@@ -300,47 +299,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 height: 20,
                                                 child:
                                                     CircularProgressIndicator(
-                                                  strokeWidth: 2.4,
-                                                  color: Colors.white,
-                                                ),
+                                                      strokeWidth: 2.4,
+                                                      color: Colors.white,
+                                                    ),
                                               )
                                             : _success
-                                                ? const Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Icon(Icons.check,
-                                                          color: Colors.white,
-                                                          size: 18),
-                                                      SizedBox(width: 8),
-                                                      Text('Berhasil'),
-                                                    ],
-                                                  )
-                                                : const Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                    children: [
-                                                      Text('Masuk'),
-                                                      Icon(Icons.arrow_forward,
-                                                          color: Colors.white,
-                                                          size: 20),
-                                                    ],
+                                            ? const Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.check,
+                                                    color: Colors.white,
+                                                    size: 18,
                                                   ),
+                                                  SizedBox(width: 8),
+                                                  Text('Berhasil'),
+                                                ],
+                                              )
+                                            : const Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Text('Masuk'),
+                                                  Icon(
+                                                    Icons.arrow_forward,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
+                                                ],
+                                              ),
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
                                       // Divider "atau"
                                       Row(
                                         children: [
-                                          const Expanded(
-                                            child: Divider(),
-                                          ),
+                                          const Expanded(child: Divider()),
                                           Padding(
-                                            padding: const EdgeInsets
-                                                .symmetric(
-                                                horizontal:
-                                                    AppSpacing.md),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.md,
+                                            ),
                                             child: Text(
                                               'atau',
                                               style: Theme.of(context)
@@ -348,9 +347,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                   .bodySmall,
                                             ),
                                           ),
-                                          const Expanded(
-                                            child: Divider(),
-                                          ),
+                                          const Expanded(child: Divider()),
                                         ],
                                       ),
                                       const SizedBox(height: AppSpacing.md),
@@ -360,66 +357,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             : _signInWithGoogle,
                                         style: OutlinedButton.styleFrom(
                                           padding: const EdgeInsets.symmetric(
-                                              vertical: 12),
+                                            vertical: 12,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(AppRadius.lg),
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.lg,
+                                            ),
                                           ),
                                           side: const BorderSide(
                                             color: AppColors.line,
                                           ),
                                         ),
-                                       child: Row(
-                                           mainAxisAlignment:
-                                               MainAxisAlignment.center,
-                                           children: [
-                                             const Icon(
-                                               Icons.g_mobiledata_rounded,
-                                               size: 26,
-                                               color: AppColors.brand,
-                                             ),
-                                             const SizedBox(width: 6),
-                                             Flexible(
-                                               child: Text(
-                                                 'Lanjutkan dengan Google',
-                                                 maxLines: 1,
-                                                 overflow: TextOverflow.ellipsis,
-                                                 style: Theme.of(context)
-                                                     .textTheme
-                                                     .labelLarge
-                                                     ?.copyWith(
-                                                       fontWeight: FontWeight.w600,
-                                                     ),
-                                               ),
-                                             ),
-                                           ],
-                                         ),
-                                       ),
-                                       const SizedBox(height: AppSpacing.sm),
-                                       Wrap(
-                                         alignment: WrapAlignment.center,
-                                         crossAxisAlignment:
-                                             WrapCrossAlignment.center,
-                                         children: [
-                                           Text(
-                                             'Belum punya akun?',
-                                             style: Theme.of(context)
-                                                 .textTheme
-                                                 .bodyMedium
-                                                 ?.copyWith(
-                                                   color: AppColors.muted,
-                                                 ),
-                                           ),
-                                           TextButton(
-                                             onPressed: _isLoading
-                                                 ? null
-                                                 : () => Navigator.pushNamed(
-                                                     context, '/register'),
-                                             child:
-                                                 const Text('Daftar akun baru'),
-                                           ),
-                                         ],
-                                       ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.g_mobiledata_rounded,
+                                              size: 26,
+                                              color: AppColors.brand,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                'Lanjutkan dengan Google',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelLarge
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Wrap(
+                                        alignment: WrapAlignment.center,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Belum punya akun?',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color: AppColors.muted,
+                                                ),
+                                          ),
+                                          TextButton(
+                                            onPressed: _isLoading
+                                                ? null
+                                                : () => Navigator.pushNamed(
+                                                    context,
+                                                    '/register',
+                                                  ),
+                                            child: const Text(
+                                              'Daftar akun baru',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),

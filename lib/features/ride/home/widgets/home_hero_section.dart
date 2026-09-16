@@ -44,7 +44,10 @@ class HomeHeroSection extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFEAF4EC),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCCE4D4), width: 1),
+                        border: Border.all(
+                          color: const Color(0xFFCCE4D4),
+                          width: 1,
+                        ),
                       ),
                       child: Text(
                         'Jarak bukan penghalang\nuntuk tetap bersama.',

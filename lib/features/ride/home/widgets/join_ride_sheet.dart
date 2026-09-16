@@ -57,18 +57,14 @@ class _JoinRideSheetState extends State<JoinRideSheet> {
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Gabung ride',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
               'Scan QR host atau masukkan kode 8 karakter.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.muted,
-                    fontSize: 13,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.muted, fontSize: 13),
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -83,8 +79,11 @@ class _JoinRideSheetState extends State<JoinRideSheet> {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              icon: const Icon(Icons.qr_code_scanner_rounded,
-                  color: AppColors.brand, size: 22),
+              icon: const Icon(
+                Icons.qr_code_scanner_rounded,
+                color: AppColors.brand,
+                size: 22,
+              ),
               label: const Text(
                 'Scan QR Code Teman',
                 style: TextStyle(
@@ -103,9 +102,8 @@ class _JoinRideSheetState extends State<JoinRideSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     'atau ketik kode',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11.5,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(fontSize: 11.5),
                   ),
                 ),
                 const Expanded(child: Divider()),
@@ -120,11 +118,17 @@ class _JoinRideSheetState extends State<JoinRideSheet> {
               decoration: InputDecoration(
                 labelText: 'Kode undangan',
                 hintText: 'Contoh: A1B2C3D4',
-                prefixIcon: const Icon(Icons.tag_rounded,
-                    color: AppColors.muted, size: 20),
+                prefixIcon: const Icon(
+                  Icons.tag_rounded,
+                  color: AppColors.muted,
+                  size: 20,
+                ),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.qr_code_scanner,
-                      color: AppColors.brand, size: 20),
+                  icon: const Icon(
+                    Icons.qr_code_scanner,
+                    color: AppColors.brand,
+                    size: 20,
+                  ),
                   tooltip: 'Scan QR',
                   onPressed: _openScanner,
                 ),

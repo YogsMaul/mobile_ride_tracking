@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../../../../core/network/service/route_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -10,7 +12,8 @@ class RideDestinationSheet extends StatefulWidget {
   final double? currentLng;
   final String? routeDistance;
   final String? routeDuration;
-  final Future<void> Function(String name, double lat, double lng) onSelectDestination;
+  final Future<void> Function(String name, double lat, double lng)
+  onSelectDestination;
   final VoidCallback? onPickOnMap;
   final Future<void> Function()? onClearDestination;
 
@@ -70,11 +73,7 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
   Future<void> _pickPlace(PlaceSearchResult place) async {
     setState(() => _isSubmitting = true);
     try {
-      await widget.onSelectDestination(
-        place.shortName,
-        place.lat,
-        place.lng,
-      );
+      await widget.onSelectDestination(place.shortName, place.lat, place.lng);
       if (mounted) Navigator.pop(context);
     } catch (_) {
       // Ditangani oleh caller
@@ -85,7 +84,8 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final hasCurrent = widget.currentDestName != null &&
+    final hasCurrent =
+        widget.currentDestName != null &&
         widget.currentDestName!.trim().isNotEmpty;
 
     return Padding(
@@ -162,7 +162,9 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
                   decoration: BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -224,7 +226,10 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
                   onChanged: _onQueryChanged,
                   decoration: InputDecoration(
                     hintText: 'Ketik nama kota, jalan, tempat tujuan...',
-                    hintStyle: const TextStyle(fontSize: 13, color: AppColors.muted),
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.muted,
+                    ),
                     prefixIcon: const Icon(Icons.search_rounded, size: 20),
                     suffixIcon: _isSearching
                         ? const Padding(
@@ -236,20 +241,25 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
                             ),
                           )
                         : (_searchCtrl.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear, size: 18),
-                                onPressed: () {
-                                  _searchCtrl.clear();
-                                  _onQueryChanged('');
-                                },
-                              )
-                            : null),
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    _onQueryChanged('');
+                                  },
+                                )
+                              : null),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.15)),
+                      borderSide: BorderSide(
+                        color: Colors.black.withValues(alpha: 0.15),
+                      ),
                     ),
                   ),
                 ),
@@ -263,7 +273,10 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
                     icon: const Icon(Icons.touch_app_rounded, size: 18),
                     label: const Text(
                       'Atau ketuk langsung di peta',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.brand,

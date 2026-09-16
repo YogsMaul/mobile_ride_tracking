@@ -156,9 +156,7 @@ class RideDetailScreen extends ConsumerWidget {
                             radius: 18,
                             backgroundColor: AppColors.brandSoft,
                             child: Text(
-                              m.name.isNotEmpty
-                                  ? m.name[0].toUpperCase()
-                                  : 'R',
+                              m.name.isNotEmpty ? m.name[0].toUpperCase() : 'R',
                               style: const TextStyle(
                                 color: AppColors.brand,
                                 fontWeight: FontWeight.w700,
@@ -262,10 +260,7 @@ class RideDetailScreen extends ConsumerWidget {
       child: SizedBox(
         height: 220,
         child: FlutterMap(
-          options: MapOptions(
-            initialCenter: startPoint,
-            initialZoom: 14,
-          ),
+          options: MapOptions(initialCenter: startPoint, initialZoom: 14),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -291,8 +286,11 @@ class RideDetailScreen extends ConsumerWidget {
                       color: AppColors.brand,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.play_arrow,
-                        color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
                 Marker(
@@ -304,8 +302,11 @@ class RideDetailScreen extends ConsumerWidget {
                       color: AppColors.accent,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.flag_rounded,
-                        color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.flag_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ],
@@ -363,16 +364,20 @@ class RideDetailScreen extends ConsumerWidget {
     final (bg, fg, label) = switch (status) {
       RideStatus.completed => (AppColors.brandSoft, AppColors.brand, 'Selesai'),
       RideStatus.active => (
-          const Color(0xFFFEF3E2),
-          AppColors.accent,
-          'Berjalan',
-        ),
+        const Color(0xFFFEF3E2),
+        AppColors.accent,
+        'Berjalan',
+      ),
       RideStatus.planned => (
-          AppColors.infoFill,
-          AppColors.info,
-          'Direncanakan',
-        ),
-      RideStatus.cancelled => (AppColors.warnFill, AppColors.warn, 'Dibatalkan'),
+        AppColors.infoFill,
+        AppColors.info,
+        'Direncanakan',
+      ),
+      RideStatus.cancelled => (
+        AppColors.warnFill,
+        AppColors.warn,
+        'Dibatalkan',
+      ),
     };
 
     return Container(
@@ -383,11 +388,7 @@ class RideDetailScreen extends ConsumerWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }

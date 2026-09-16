@@ -21,8 +21,10 @@ void main() async {
   final lifecycle = AppLifecycleObserver(auth);
   WidgetsBinding.instance.addObserver(lifecycle);
 
-  runApp(UncontrolledProviderScope(
-    container: container,
-    child: RideTrackingApp(lifecycle: lifecycle),
-  ));
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: RideTrackingApp(lifecycle: lifecycle),
+    ),
+  );
 }

@@ -1,10 +1,15 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 
 class CountdownRing extends StatelessWidget {
-  const CountdownRing({super.key, required this.progress, required this.remaining});
+  const CountdownRing({
+    super.key,
+    required this.progress,
+    required this.remaining,
+  });
   final double progress;
   final int remaining;
 
@@ -55,7 +60,11 @@ class CountdownRing extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  _RingPainter({required this.progress, required this.track, required this.fill});
+  _RingPainter({
+    required this.progress,
+    required this.track,
+    required this.fill,
+  });
   final double progress;
   final Color track;
   final Color fill;

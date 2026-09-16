@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class HomePrimaryCard extends StatelessWidget {
-  const HomePrimaryCard({
-    super.key,
-    this.onTap,
-    this.activeRideName,
-  });
+  const HomePrimaryCard({super.key, this.onTap, this.activeRideName});
 
   final VoidCallback? onTap;
   final String? activeRideName;
@@ -20,9 +16,7 @@ class HomePrimaryCard extends StatelessWidget {
       opacity: disabled ? 0.5 : 1.0,
       child: Material(
         color: AppColors.brand,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -55,12 +49,12 @@ class HomePrimaryCard extends StatelessWidget {
                         isActive ? activeRideName! : 'Mulai ride',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                       ),
                       const SizedBox(height: 1),
                       Text(
@@ -70,10 +64,10 @@ class HomePrimaryCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 11.5,
-                              height: 1.35,
-                              color: Colors.white.withValues(alpha: 0.90),
-                            ),
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color: Colors.white.withValues(alpha: 0.90),
+                        ),
                       ),
                     ],
                   ),
@@ -144,22 +138,20 @@ class HomeSecondaryCard extends StatelessWidget {
                     children: [
                       Text(
                         'Gabung ride',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.ink,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ink,
+                            ),
                       ),
                       const SizedBox(height: 1),
                       Text(
                         'Punya kode 8 karakter dari host?',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 11.5,
-                              color: AppColors.muted,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(fontSize: 11.5, color: AppColors.muted),
                       ),
                     ],
                   ),
@@ -180,79 +172,6 @@ class HomeSecondaryCard extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class HomeTipsCard extends StatelessWidget {
-  const HomeTipsCard({super.key, required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.infoFill,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.infoBorder),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppColors.infoFillSoft,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.my_location_rounded,
-                  color: AppColors.info,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tips',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.info,
-                          ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      'Pastikan GPS aktif untuk tracking akurat.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11.5,
-                            color: AppColors.infoText,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.arrow_forward_rounded,
-                color: AppColors.info,
-                size: 18,
-              ),
-            ],
           ),
         ),
       ),

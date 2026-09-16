@@ -20,26 +20,26 @@ class RideModel {
   });
 
   factory RideModel.fromJson(Map<String, dynamic> json) => RideModel(
-        id: json['id'] as String? ?? '',
-        ownerId: json['owner_id'] as String?,
-        name: json['name'] as String?,
-        inviteCode: json['invite_code'] as String?,
-        status: json['status'] as String?,
-        destName: json['dest_name'] as String?,
-        destLat: (json['dest_lat'] as num?)?.toDouble(),
-        destLng: (json['dest_lng'] as num?)?.toDouble(),
-      );
+    id: json['id'] as String? ?? '',
+    ownerId: json['owner_id'] as String?,
+    name: json['name'] as String?,
+    inviteCode: json['invite_code'] as String?,
+    status: json['status'] as String?,
+    destName: json['dest_name'] as String?,
+    destLat: (json['dest_lat'] as num?)?.toDouble(),
+    destLng: (json['dest_lng'] as num?)?.toDouble(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        if (ownerId != null) 'owner_id': ownerId,
-        if (name != null) 'name': name,
-        if (inviteCode != null) 'invite_code': inviteCode,
-        if (status != null) 'status': status,
-        if (destName != null) 'dest_name': destName,
-        if (destLat != null) 'dest_lat': destLat,
-        if (destLng != null) 'dest_lng': destLng,
-      };
+    'id': id,
+    if (ownerId != null) 'owner_id': ownerId,
+    if (name != null) 'name': name,
+    if (inviteCode != null) 'invite_code': inviteCode,
+    if (status != null) 'status': status,
+    if (destName != null) 'dest_name': destName,
+    if (destLat != null) 'dest_lat': destLat,
+    if (destLng != null) 'dest_lng': destLng,
+  };
 
   RideModel copyWith({
     String? id,
@@ -50,17 +50,16 @@ class RideModel {
     String? destName,
     double? destLat,
     double? destLng,
-  }) =>
-      RideModel(
-        id: id ?? this.id,
-        ownerId: ownerId ?? this.ownerId,
-        name: name ?? this.name,
-        inviteCode: inviteCode ?? this.inviteCode,
-        status: status ?? this.status,
-        destName: destName ?? this.destName,
-        destLat: destLat ?? this.destLat,
-        destLng: destLng ?? this.destLng,
-      );
+  }) => RideModel(
+    id: id ?? this.id,
+    ownerId: ownerId ?? this.ownerId,
+    name: name ?? this.name,
+    inviteCode: inviteCode ?? this.inviteCode,
+    status: status ?? this.status,
+    destName: destName ?? this.destName,
+    destLat: destLat ?? this.destLat,
+    destLng: destLng ?? this.destLng,
+  );
 
   String get displayCode {
     final raw = (inviteCode ?? id).replaceAll('-', '');
@@ -84,6 +83,14 @@ class RideModel {
           destLng == other.destLng;
 
   @override
-  int get hashCode =>
-      Object.hash(id, ownerId, name, inviteCode, status, destName, destLat, destLng);
+  int get hashCode => Object.hash(
+    id,
+    ownerId,
+    name,
+    inviteCode,
+    status,
+    destName,
+    destLat,
+    destLng,
+  );
 }

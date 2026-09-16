@@ -34,18 +34,21 @@ class RideService {
   /// GET /rides/me — list semua ride dimana user jadi member.
   /// [status] opsional: 'completed', 'cancelled', 'active', 'planned'
   /// (comma-separated untuk multiple).
-  Future<Response> getMyRides({String? status, int limit = 50, int offset = 0}) async {
-    final params = <String, dynamic>{
-      'limit': limit,
-      'offset': offset,
-    };
+  /// [search] opsional: pencarian nama ride / tujuan (param ?q=).
+  Future<Response> getMyRides({
+    String? status,
+    String? search,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final params = <String, dynamic>{'limit': limit, 'offset': offset};
     if (status != null && status.isNotEmpty) {
       params['status'] = status;
     }
-    return await dio.get(
-      ApiConstants.myRidesEndpoint,
-      queryParameters: params,
-    );
+    if (search != null && search.trim().isNotEmpty) {
+      params['q'] = search.trim();
+    }
+    return await dio.get(ApiConstants.myRidesEndpoint, queryParameters: params);
   }
 
   /// POST /rides/:id/end — owner selesaikan ride (active → completed).

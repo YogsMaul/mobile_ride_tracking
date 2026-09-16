@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:web_socket_channel/web_socket_channel.dart';
+
 import '../storage/secure_storage_service.dart';
 import '../constants/api_constants.dart';
 
@@ -18,8 +20,9 @@ class WebSocketManager {
   Stream<Map<String, dynamic>> get stream => _controller.stream;
 
   Future<void> connect({String? rideId}) async {
-    final effectiveRideId =
-        (rideId != null && rideId.trim().isNotEmpty) ? rideId.trim() : _rideId;
+    final effectiveRideId = (rideId != null && rideId.trim().isNotEmpty)
+        ? rideId.trim()
+        : _rideId;
 
     if (effectiveRideId == null || effectiveRideId.isEmpty) {
       // Backend hanya menerima koneksi dengan ID ride: /ws/rides/:id

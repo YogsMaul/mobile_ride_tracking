@@ -21,7 +21,11 @@ class HistoryFilterChips extends StatelessWidget {
       child: Row(
         children: [
           for (final f in RideHistoryFilter.values) ...[
-            _FilterChip(label: f.label, selected: f == selected, onTap: () => onChanged(f)),
+            _FilterChip(
+              label: f.label,
+              selected: f == selected,
+              onTap: () => onChanged(f),
+            ),
             if (f != RideHistoryFilter.values.last) const SizedBox(width: 10),
           ],
         ],
@@ -58,9 +62,9 @@ class _FilterChip extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontSize: 13.5,
-                  color: selected ? Colors.white : AppColors.brand,
-                ),
+              fontSize: 13.5,
+              color: selected ? Colors.white : AppColors.brand,
+            ),
           ),
         ),
       ),

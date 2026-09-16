@@ -123,8 +123,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           style: IconButton.styleFrom(
                             backgroundColor: AppColors.surface,
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.md),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                               side: const BorderSide(color: AppColors.line),
                             ),
                           ),
@@ -149,14 +148,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             children: [
                               Text(
                                 'Mulai petualangan',
-                                style: Theme.of(context).textTheme.headlineMedium,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Buat akun untuk melacak rute dan bergabung ke sesi.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(color: AppColors.muted),
                               ),
                               const SizedBox(height: AppSpacing.lg),
@@ -166,13 +165,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 controller: _nameController,
                                 decoration: const InputDecoration(
                                   labelText: 'Nama lengkap',
-                                  prefixIcon: Icon(Icons.person_outline,
-                                      color: AppColors.muted, size: 20),
+                                  prefixIcon: Icon(
+                                    Icons.person_outline,
+                                    color: AppColors.muted,
+                                    size: 20,
+                                  ),
                                 ),
                                 textCapitalization: TextCapitalization.words,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.name],
-                                validator: (v) => AppValidators.requiredField(v, 'Nama'),
+                                validator: (v) =>
+                                    AppValidators.requiredField(v, 'Nama'),
                               ),
                               const SizedBox(height: AppSpacing.md),
 
@@ -181,8 +184,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 controller: _emailController,
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
-                                  prefixIcon: Icon(Icons.alternate_email,
-                                      color: AppColors.muted, size: 20),
+                                  prefixIcon: Icon(
+                                    Icons.alternate_email,
+                                    color: AppColors.muted,
+                                    size: 20,
+                                  ),
                                 ),
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
@@ -196,14 +202,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 controller: _passwordController,
                                 obscureText: _obscure,
                                 textInputAction: TextInputAction.done,
-                                autofillHints: const [AutofillHints.newPassword],
+                                autofillHints: const [
+                                  AutofillHints.newPassword,
+                                ],
                                 onChanged: (v) => setState(() => _password = v),
                                 onFieldSubmitted: (_) =>
                                     _isLoading ? null : _register(),
                                 decoration: InputDecoration(
                                   labelText: 'Password',
-                                  prefixIcon: const Icon(Icons.lock_outline,
-                                      color: AppColors.muted, size: 20),
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline,
+                                    color: AppColors.muted,
+                                    size: 20,
+                                  ),
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       _obscure
@@ -216,20 +227,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         setState(() => _obscure = !_obscure),
                                   ),
                                 ),
-                                validator: (v) => AppValidators.password(v, minLength: 8),
+                                validator: (v) =>
+                                    AppValidators.password(v, minLength: 8),
                               ),
                               const SizedBox(height: AppSpacing.sm),
 
                               // Password Strength Indicator
                               if (_password.isNotEmpty) ...[
-                                PasswordStrengthBar(isStrong: _isStrong(_password)),
+                                PasswordStrengthBar(
+                                  isStrong: _isStrong(_password),
+                                ),
                                 const SizedBox(height: AppSpacing.md),
                               ],
 
                               const SizedBox(height: AppSpacing.lg),
                               FilledButton(
-                                onPressed:
-                                    (_isLoading || _success) ? null : _register,
+                                onPressed: (_isLoading || _success)
+                                    ? null
+                                    : _register,
                                 child: _isLoading
                                     ? const SizedBox(
                                         width: 20,
@@ -240,17 +255,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         ),
                                       )
                                     : _success
-                                        ? const Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.check,
-                                                  color: Colors.white, size: 18),
-                                              SizedBox(width: 8),
-                                              Text('Berhasil'),
-                                            ],
-                                          )
-                                        : const Text('Daftar Akun'),
+                                    ? const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text('Berhasil'),
+                                        ],
+                                      )
+                                    : const Text('Daftar Akun'),
                               ),
                               const SizedBox(height: AppSpacing.lg),
                               // Divider "atau"
@@ -263,7 +281,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     ),
                                     child: Text(
                                       'atau',
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
                                     ),
                                   ),
                                   const Expanded(child: Divider()),
@@ -275,14 +295,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     ? null
                                     : _signInWithGoogle,
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.lg),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.lg,
+                                    ),
                                   ),
-                                  side: const BorderSide(
-                                    color: AppColors.line,
-                                  ),
+                                  side: const BorderSide(color: AppColors.line),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -311,23 +332,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            'Sudah punya akun?',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.muted,
-                                ),
-                          ),
-                          TextButton(
-                            onPressed:
-                                _isLoading ? null : () => Navigator.pop(context),
-                            child: const Text('Masuk di sini'),
-                          ),
-                        ],
-                      ),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'Sudah punya akun?',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.muted),
+                        ),
+                        TextButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () => Navigator.pop(context),
+                          child: const Text('Masuk di sini'),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -338,4 +359,3 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 }
-

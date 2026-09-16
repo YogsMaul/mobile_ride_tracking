@@ -22,10 +22,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     return Scaffold(
       extendBody: true,
       body: AppBackground(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: widget.pages,
-        ),
+        child: IndexedStack(index: _currentIndex, children: widget.pages),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -71,7 +68,8 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                 ),
                 child: NavigationBar(
                   selectedIndex: _currentIndex,
-                  onDestinationSelected: (i) => setState(() => _currentIndex = i),
+                  onDestinationSelected: (i) =>
+                      setState(() => _currentIndex = i),
                   destinations: const [
                     NavigationDestination(
                       icon: Icon(Icons.home_outlined),

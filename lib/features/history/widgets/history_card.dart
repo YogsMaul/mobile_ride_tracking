@@ -40,9 +40,7 @@ class HistoryCard extends StatelessWidget {
                             item.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w600,
@@ -65,9 +63,7 @@ class HistoryCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Text(
                           item.metadata,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 fontSize: 11.5,
                                 color: AppColors.muted,
@@ -89,9 +85,7 @@ class HistoryCard extends StatelessWidget {
                             item.timeRange,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   fontSize: 11.5,
                                   color: AppColors.muted,
@@ -128,9 +122,7 @@ class _RouteThumbnail extends StatelessWidget {
         color: AppColors.brandSoft,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: CustomPaint(
-        painter: _RouteThumbnailPainter(),
-      ),
+      child: CustomPaint(painter: _RouteThumbnailPainter()),
     );
   }
 }
@@ -224,16 +216,20 @@ class _StatusBadge extends StatelessWidget {
     final (bg, fg, label) = switch (status) {
       RideStatus.completed => (AppColors.brandSoft, AppColors.brand, 'Selesai'),
       RideStatus.active => (
-          const Color(0xFFFEF3E2),
-          AppColors.accent,
-          'Berjalan',
-        ),
+        const Color(0xFFFEF3E2),
+        AppColors.accent,
+        'Berjalan',
+      ),
       RideStatus.planned => (
-          AppColors.infoFill,
-          AppColors.info,
-          'Direncanakan',
-        ),
-      RideStatus.cancelled => (AppColors.warnFill, AppColors.warn, 'Dibatalkan'),
+        AppColors.infoFill,
+        AppColors.info,
+        'Direncanakan',
+      ),
+      RideStatus.cancelled => (
+        AppColors.warnFill,
+        AppColors.warn,
+        'Dibatalkan',
+      ),
     };
 
     return Container(
@@ -244,11 +240,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }

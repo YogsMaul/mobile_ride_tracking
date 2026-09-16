@@ -56,7 +56,8 @@ class ApiConstants {
   static String leaveRideEndpoint(String rideId) => '/rides/$rideId/leave';
   static String rideTrailEndpoint(String rideId) => '/rides/$rideId/trail';
   static String rideMembersEndpoint(String rideId) => '/rides/$rideId/members';
-  static String rideDestinationEndpoint(String rideId) => '/rides/$rideId/destination';
+  static String rideDestinationEndpoint(String rideId) =>
+      '/rides/$rideId/destination';
 
   // --- Belum ada di backend ---
   // Route berikut SUDAH diimplementasi di main.go (Phase 2 audit 2026-09-12).

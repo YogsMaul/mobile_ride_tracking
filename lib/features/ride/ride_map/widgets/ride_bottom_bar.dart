@@ -46,9 +46,7 @@ class RideBottomBar extends StatelessWidget {
               ),
             ],
           ),
-          child: isPlanned
-              ? _buildLobbyBar(context)
-              : _buildActiveBar(context),
+          child: isPlanned ? _buildLobbyBar(context) : _buildActiveBar(context),
         ),
       ),
     );
@@ -84,9 +82,8 @@ class RideBottomBar extends StatelessWidget {
                     children: [
                       Text(
                         'Lobby Ride',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -114,9 +111,8 @@ class RideBottomBar extends StatelessWidget {
                     isHost
                         ? 'Kamu Room Master. Mulai saat semua siap!'
                         : 'Menunggu Room Master memulai perjalanan...',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.muted,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: AppColors.muted),
                   ),
                 ],
               ),
@@ -151,10 +147,7 @@ class RideBottomBar extends StatelessWidget {
                 : const Icon(Icons.play_arrow, size: 20),
             label: Text(
               isStarting ? 'Memulai...' : 'Mulai Perjalanan',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
             ),
           ),
         ],
@@ -182,9 +175,8 @@ class RideBottomBar extends StatelessWidget {
             children: [
               Text(
                 '$riderCount rider online',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 2),
               Text(
@@ -200,9 +192,7 @@ class RideBottomBar extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.warn,
             minimumSize: const Size(0, 40),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           ),
           onPressed: onLeave,
           child: Text(isHost ? 'Selesai' : 'Keluar'),

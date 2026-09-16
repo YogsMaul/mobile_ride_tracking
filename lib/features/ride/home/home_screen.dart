@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/error/app_exception.dart';
 import '../../../core/network/models/ride_model.dart';
@@ -38,25 +39,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final rides = await repo.getMyRides(status: 'planned,active', limit: 1);
       if (rides.isEmpty || !mounted) return;
       final r = rides.first;
-      ref.read(rideStateProvider.notifier).setActive(
-            RideModel(id: r.id, name: r.title, status: r.status.name),
-          );
+      ref
+          .read(rideStateProvider.notifier)
+          .setActive(RideModel(id: r.id, name: r.title, status: r.status.name));
     } catch (_) {
       // Offline / gagal — banner memang tidak perlu tampil.
     }
   }
 
-  void _backToRide() {
+  Future<void> _backToRide() async {
     final ride = ref.read(rideStateProvider);
     if (ride == null) return;
-    Navigator.pushNamed(context, '/ride', arguments: {
-      'rideId': ride.id,
-      'inviteCode': ride.inviteCode,
-      'rideName': ride.name,
-    });
+    if (!await _ensureGpsReady()) return;
+    _openRide(ride.id, ride.inviteCode, ride.name);
   }
 
   Future<void> _createRide() async {
+    if (!await _ensureGpsReady()) return;
+    if (!mounted) return;
     final nameController = TextEditingController();
     final roomName = await showDialog<String?>(
       context: context,
@@ -124,6 +124,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _showJoinDialog() async {
+    if (!await _ensureGpsReady()) return;
+    if (!mounted) return;
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -153,39 +155,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openRide(String rideId, String? inviteCode, String? rideName) {
     if (!mounted) return;
-    ref.read(rideStateProvider.notifier).setActive(
-          RideModel(
-            id: rideId,
-            inviteCode: inviteCode,
-            name: rideName,
-          ),
+    ref
+        .read(rideStateProvider.notifier)
+        .setActive(
+          RideModel(id: rideId, inviteCode: inviteCode, name: rideName),
         );
-    Navigator.pushNamed(context, '/ride', arguments: {
-      'rideId': rideId,
-      'inviteCode': inviteCode,
-      'rideName': rideName,
-    });
+    Navigator.pushNamed(
+      context,
+      '/ride',
+      arguments: {
+        'rideId': rideId,
+        'inviteCode': inviteCode,
+        'rideName': rideName,
+      },
+    );
   }
 
-  Future<void> _showGpsTipDialog() {
-    return showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pastikan GPS aktif'),
-        content: const Text(
-          'Tracking konvoi butuh sinyal GPS yang stabil. '
-          'Nyalakan layanan lokasi, izinkan akses lokasi untuk aplikasi '
-          'ini (pilih "Saat aplikasi digunakan"), dan hindari mode hemat '
-          'daya yang membatasi GPS di latar belakang.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Mengerti'),
+  /// Pastikan GPS aktif sebelum masuk ride; kalau mati, tawari buka setting.
+  Future<bool> _ensureGpsReady() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (enabled) return true;
+      if (!mounted) return false;
+
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
-    );
+          title: const Text('Nyalakan GPS'),
+          content: const Text(
+            'GPS perangkatmu belum aktif. Nyalakan layanan lokasi agar '
+            'posisi konvoi dan rute tujuan bisa terbaca akurat.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Nanti saja'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.brand,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Buka Pengaturan'),
+            ),
+          ],
+        ),
+      );
+
+      if (openSettings == true) {
+        await Geolocator.openLocationSettings();
+      }
+      return false;
+    } catch (_) {
+      return true;
+    }
   }
 
   @override
@@ -223,20 +252,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onTap: _busy
                                 ? null
                                 : (activeRide != null
-                                    ? _backToRide
-                                    : _createRide),
+                                      ? _backToRide
+                                      : _createRide),
                             activeRideName: activeRide == null
                                 ? null
                                 : ((activeRide.name?.isNotEmpty ?? false)
-                                    ? activeRide.name
-                                    : 'Ride aktif ${activeRide.displayCode}'),
+                                      ? activeRide.name
+                                      : 'Ride aktif ${activeRide.displayCode}'),
                           ),
                           const SizedBox(height: 10),
                           HomeSecondaryCard(
                             onTap: _busy ? null : _showJoinDialog,
                           ),
-                          const SizedBox(height: 10),
-                          HomeTipsCard(onTap: _showGpsTipDialog),
                           // Ruang aman biar konten tak tertutup navbar floating.
                           const SizedBox(height: 112),
                         ]),

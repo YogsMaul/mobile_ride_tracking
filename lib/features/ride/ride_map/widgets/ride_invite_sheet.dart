@@ -50,9 +50,8 @@ class RideInviteSheet extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Teman tinggal scan QR-nya, atau ketik kodenya.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.muted,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.muted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -78,7 +77,10 @@ class RideInviteSheet extends StatelessWidget {
                 onTap: () async {
                   await Clipboard.setData(ClipboardData(text: displayCode));
                   if (context.mounted) {
-                    AppToast.success(context, 'Kode $displayCode berhasil disalin!');
+                    AppToast.success(
+                      context,
+                      'Kode $displayCode berhasil disalin!',
+                    );
                   }
                 },
                 child: Padding(
@@ -112,10 +114,7 @@ class RideInviteSheet extends StatelessWidget {
             const SizedBox(height: 6),
             const Text(
               'Ketuk kode untuk menyalin',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.muted,
-              ),
+              style: TextStyle(fontSize: 11, color: AppColors.muted),
             ),
           ],
         ),

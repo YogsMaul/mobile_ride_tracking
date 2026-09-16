@@ -9,7 +9,7 @@ class SecureStorageService {
   final FlutterSecureStorage _storage;
 
   const SecureStorageService([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
 

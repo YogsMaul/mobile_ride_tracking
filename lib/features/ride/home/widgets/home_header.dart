@@ -24,20 +24,18 @@ class HomeHeader extends ConsumerWidget {
             children: [
               Text(
                 'Halo,',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
-                      fontSize: 11,
-                    ),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.muted, fontSize: 11),
               ),
               Text(
                 hasName ? name : 'rider',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                ),
               ),
             ],
           ),
