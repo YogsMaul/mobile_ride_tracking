@@ -9,6 +9,7 @@ import 'core/widgets/app_toast.dart';
 import 'features/auth/auth_state.dart';
 import 'features/auth/idle_session_modal.dart';
 import 'features/auth/login_screen.dart';
+import 'features/splash/splash_screen.dart';
 import 'routes/app_routes.dart';
 
 /// Global navigator — dipakai buat akses context dari luar widget tree
@@ -87,12 +88,26 @@ class _AuthGate extends ConsumerWidget {
       }
     });
 
-    switch (auth.status) {
-      case AuthStatus.loggedIn:
-        return const AppShell();
-      case AuthStatus.loggedOut:
-      case AuthStatus.idleWarning:
-        return const LoginScreen();
-    }
+    final child = switch (auth.status) {
+      AuthStatus.unknown => const SplashScreen(),
+      AuthStatus.loggedIn => const AppShell(),
+      AuthStatus.loggedOut || AuthStatus.idleWarning => const LoginScreen(),
+    };
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      switchInCurve: Curves.easeIn,
+      switchOutCurve: Curves.easeOut,
+      child: KeyedSubtree(
+        // Key = identitas layar, bukan status mentah — loggedOut &
+        // idleWarning dua-duanya LoginScreen, gak boleh di-rebuild ulang.
+        key: ValueKey(switch (auth.status) {
+          AuthStatus.unknown => 'splash',
+          AuthStatus.loggedIn => 'shell',
+          _ => 'login',
+        }),
+        child: child,
+      ),
+    );
   }
 }

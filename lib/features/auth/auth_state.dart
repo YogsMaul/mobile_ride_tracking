@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/storage/secure_storage_service.dart';
 
-/// Status sesi: logged out / logged in / idle warning (perlu konfirmasi user).
-enum AuthStatus { loggedOut, loggedIn, idleWarning }
+/// Status sesi: unknown (sedang bootstrap/splash), loggedOut, loggedIn,
+/// idleWarning (perlu konfirmasi user).
+enum AuthStatus { unknown, loggedOut, loggedIn, idleWarning }
 
 /// State singleton untuk auth. Dipakai oleh router (app.dart) buat decide
 /// halaman mana yang ditampilkan, dan oleh widget idle-modal buat show.
 class AuthState extends ChangeNotifier {
-  AuthStatus _status = AuthStatus.loggedOut;
+  AuthStatus _status = AuthStatus.unknown;
   bool _idleModalOpen = false;
   final SecureStorageService _storage;
 

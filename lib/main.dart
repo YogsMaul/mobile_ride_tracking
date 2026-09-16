@@ -11,12 +11,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
 
-  // Container sementara untuk bootstrap auth — butuh ref untuk baca provider
-  // tapi belum ada ProviderScope. Trik: bikin container sekali, ambil instance,
-  // baru bungkus dengan ProviderScope.
+  // Bootstrap auth TIDAK di-await di sini — cukup baca instance singletonnya.
+  // SplashScreen yang menjalankan auth.bootstrap() paralel dengan animasi
+  // minimal-tampil, biar native splash -> Flutter splash zero-wait.
   final container = ProviderContainer();
   final auth = container.read(authStateProvider);
-  await auth.bootstrap();
 
   final lifecycle = AppLifecycleObserver(auth);
   WidgetsBinding.instance.addObserver(lifecycle);
