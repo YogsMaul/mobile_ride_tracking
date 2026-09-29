@@ -52,8 +52,24 @@ class RideService {
   }
 
   /// POST /rides/:id/end — owner selesaikan ride (active → completed).
-  Future<Response> endRide(String rideId) async {
-    return await dio.post(ApiConstants.endRideEndpoint(rideId));
+  Future<Response> endRide(
+    String rideId, {
+    double? lat,
+    double? lng,
+    double? speed,
+    double? heading,
+  }) async {
+    final body = <String, dynamic>{};
+    if (lat != null && lng != null) {
+      body['lat'] = lat;
+      body['lng'] = lng;
+      if (speed != null) body['speed'] = speed;
+      if (heading != null) body['heading'] = heading;
+    }
+    return await dio.post(
+      ApiConstants.endRideEndpoint(rideId),
+      data: body.isNotEmpty ? body : null,
+    );
   }
 
   /// POST /rides/:id/cancel — owner batalkan ride (planned/active → cancelled).

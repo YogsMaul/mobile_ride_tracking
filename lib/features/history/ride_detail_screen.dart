@@ -53,8 +53,8 @@ class RideDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Peta Rute Jejak (kalau ada data GPS)
-          _buildMapSection(data.trail),
+          // 1. Peta Rute Jejak (kalau ada data GPS / tujuan)
+          _buildMapSection(data.trail, item),
           const SizedBox(height: 16),
 
           // 2. Info Utama Card
@@ -223,13 +223,16 @@ class RideDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMapSection(List<dynamic> trail) {
+  Widget _buildMapSection(List<dynamic> trail, RideHistoryItem item) {
     final points = <LatLng>[];
     for (final p in trail) {
       points.add(LatLng(p.lat as double, p.lng as double));
     }
 
-    if (points.isEmpty) {
+    final hasDest = item.destLat != null && item.destLng != null;
+    final destPoint = hasDest ? LatLng(item.destLat!, item.destLng!) : null;
+
+    if (points.isEmpty && destPoint == null) {
       return Container(
         height: 180,
         decoration: BoxDecoration(
@@ -252,65 +255,107 @@ class RideDetailScreen extends ConsumerWidget {
       );
     }
 
-    final startPoint = points.first;
-    final endPoint = points.last;
+    final startPoint = points.isNotEmpty ? points.first : destPoint!;
+    final lastGpsPoint = points.isNotEmpty ? points.last : null;
+
+    final markers = <Marker>[];
+
+    // Marker Mulai
+    if (points.isNotEmpty) {
+      markers.add(
+        Marker(
+          point: startPoint,
+          width: 32,
+          height: 32,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.brand,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_arrow,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Marker Titik Destinasi Tujuan Konvoi (jika ada)
+    if (destPoint != null) {
+      markers.add(
+        Marker(
+          point: destPoint,
+          width: 36,
+          height: 36,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.flag_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      );
+    } else if (lastGpsPoint != null) {
+      // Fallback: marker titik finish dari GPS terakhir jika ride tidak punya destination pin khusus
+      markers.add(
+        Marker(
+          point: lastGpsPoint,
+          width: 32,
+          height: 32,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppColors.accent,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.flag_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+        ),
+      );
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: SizedBox(
         height: 220,
         child: FlutterMap(
-          options: MapOptions(initialCenter: startPoint, initialZoom: 14),
+          options: MapOptions(
+            initialCenter: lastGpsPoint ?? destPoint ?? startPoint,
+            initialZoom: 14,
+          ),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.ridetracking.app',
             ),
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: points,
-                  color: AppColors.brand,
-                  strokeWidth: 4,
-                ),
-              ],
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: startPoint,
-                  width: 32,
-                  height: 32,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.brand,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 18,
-                    ),
+            if (points.isNotEmpty)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: points,
+                    color: AppColors.brand,
+                    strokeWidth: 4,
                   ),
-                ),
-                Marker(
-                  point: endPoint,
-                  width: 32,
-                  height: 32,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.flag_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            MarkerLayer(markers: markers),
           ],
         ),
       ),

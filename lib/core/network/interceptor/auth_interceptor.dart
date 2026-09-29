@@ -1,5 +1,6 @@
 import 'dart:async';
-
+import 'dart:convert';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:dio/dio.dart';
 
 import '../../storage/secure_storage_service.dart';
@@ -7,10 +8,7 @@ import '../../storage/secure_storage_service.dart';
 typedef AuthExpiredCallback = void Function();
 typedef AuthErrorCallback = void Function(String message);
 
-/// Attach token + auto-refresh/replay saat 401.
-///
-/// Mutex refresh: kalau 2 request kena 401 barengan, hanya 1 yang
-/// panggil refresh; yang lain tunggu Future yang sama, baru replay.
+/// Attach token + device headers (Device-ID, X-TIMESTAMP, X-SIGNATURE) + auto-refresh/replay saat 401.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._storage, {this.onAuthExpired, this.onAuthError});
 
@@ -20,12 +18,56 @@ class AuthInterceptor extends Interceptor {
 
   Completer<bool>? _refreshInFlight;
 
+  String _getFormattedTimestamp() {
+    final now = DateTime.now();
+    final offset = now.timeZoneOffset;
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(offset.inHours.abs());
+    final minutes = twoDigits(offset.inMinutes.remainder(60));
+    final sign = offset.isNegative ? '-' : '+';
+    final timezone = '$sign$hours:$minutes';
+    final date = '${now.year}-${twoDigits(now.month)}-${twoDigits(now.day)}';
+    final time =
+        '${twoDigits(now.hour)}:${twoDigits(now.minute)}:${twoDigits(now.second)}';
+    return '${date}T$time$timezone';
+  }
+
   @override
   void onRequest(options, handler) async {
     final token = await _storage.getAccessToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
+
+    final deviceId = await _storage.getDeviceId();
+    if (deviceId != null && deviceId.isNotEmpty) {
+      options.headers['Device-ID'] = deviceId;
+
+      final hmacKey = await _storage.getHmacKey();
+      if (hmacKey != null && hmacKey.isNotEmpty) {
+        final timestamp = _getFormattedTimestamp();
+        options.headers['X-TIMESTAMP'] = timestamp;
+
+        String canonicalBody = '{}';
+        if (options.data != null) {
+          if (options.data is Map || options.data is List) {
+            canonicalBody = jsonEncode(options.data).replaceAll(RegExp(r'\s+'), '').toLowerCase();
+          } else if (options.data is String) {
+            canonicalBody = options.data.toString().replaceAll(RegExp(r'\s+'), '').toLowerCase();
+          }
+        }
+
+        final bodyHash = crypto.sha256.convert(utf8.encode(canonicalBody)).toString();
+        final path = options.uri.path;
+        final stringToSign = '${options.method.toUpperCase()}:$path:$bodyHash:$timestamp';
+        final clientSecret = '$deviceId$hmacKey';
+        final hmacSha512 = crypto.Hmac(crypto.sha512, utf8.encode(clientSecret));
+        final signature = hmacSha512.convert(utf8.encode(stringToSign)).toString();
+
+        options.headers['X-SIGNATURE'] = signature;
+      }
+    }
+
     handler.next(options);
   }
 
@@ -95,9 +137,14 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<Response<dynamic>> _retry(RequestOptions requestOptions) async {
+    final token = await _storage.getAccessToken();
+    final headers = Map<String, dynamic>.from(requestOptions.headers);
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
     final options = Options(
       method: requestOptions.method,
-      headers: requestOptions.headers,
+      headers: headers,
     );
     final dio = Dio(BaseOptions(baseUrl: requestOptions.baseUrl));
     return dio.request<dynamic>(

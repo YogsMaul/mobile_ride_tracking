@@ -17,7 +17,7 @@ class RideSmoothingController extends ChangeNotifier {
 
   void start() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) => _tick());
+    _timer = Timer.periodic(const Duration(milliseconds: 33), (_) => _tick());
   }
 
   /// Terima lokasi mentah dari WS. [_targets] = ground truth.
@@ -49,25 +49,31 @@ class RideSmoothingController extends ChangeNotifier {
         changed = true;
         return;
       }
+      // Interpolasi 60fps (33ms) dengan faktor 0.15 agar perpindahan halus
       final lat =
           cur.position.latitude +
-          (target.position.latitude - cur.position.latitude) * 0.3;
+          (target.position.latitude - cur.position.latitude) * 0.15;
       final lng =
           cur.position.longitude +
-          (target.position.longitude - cur.position.longitude) * 0.3;
+          (target.position.longitude - cur.position.longitude) * 0.15;
       final dLat = (target.position.latitude - lat).abs();
       final dLng = (target.position.longitude - lng).abs();
+
+      // Interpolasi angular heading
+      var hDiff = (target.heading - cur.heading + 180) % 360 - 180;
+      final smoothHeading = (cur.heading + hDiff * 0.15 + 360) % 360;
+
       if (dLat < 1e-7 && dLng < 1e-7) {
         next[id] = target;
       } else {
         next[id] = cur.copyWith(
           position: LatLng(lat, lng),
-          heading: target.heading,
+          heading: smoothHeading,
           speed: target.speed,
         );
         changed = true;
       }
-      if ((cur.heading - target.heading).abs() > 0.5 ||
+      if ((cur.heading - target.heading).abs() > 0.2 ||
           (cur.speed - target.speed).abs() > 0.1) {
         changed = true;
       }

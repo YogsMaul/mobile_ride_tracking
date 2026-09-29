@@ -1,31 +1,20 @@
+import '../../config/app_environment.dart';
+
 /// Konfigurasi endpoint backend (Go + Fiber v2).
-///
-/// PENTING — REST dan WebSocket punya prefix yang berbeda:
-///   * REST  ada di bawah group `/api/v1`  (backend/cmd/server/main.go:87)
-///   * WS    didaftarkan di root, TANPA prefix (main.go:105-112)
-/// Jadi [wsUrl] sengaja tidak memakai [apiPrefix]. Jangan "dirapikan"
-/// supaya seragam dengan [baseUrl] — nanti WebSocket-nya justru mati.
 class ApiConstants {
-  /// Host backend. Satu-satunya tempat yang perlu diubah kalau pindah server.
-  ///
-  /// Mode A & C (backend di Windows, DB lokal atau di server): pakai
-  /// `100.76.157.57:8080` (Tailscale IP Windows) atau `localhost:8080`
-  /// kalau emulator di Windows yang sama.
-  /// Mode B (backend di server Tailscale): ganti ke `100.108.2.23:8080`.
-  ///
-  /// Catatan untuk emulator: Android emulator tidak bisa menjangkau `localhost`
-  /// milik host (pakai `10.0.2.2:8080`), tapi karena di sini yang dipakai IP
-  /// Tailscale, semua platform memakai host yang sama.
-  static const String host = '100.76.157.57:8080';
+  static AppEnvironmentConfig environmentConfig =
+      const AppEnvironmentConfig(AppEnvironment.dev);
+
+  static String get host => environmentConfig.host;
 
   /// Prefix REST API, sesuai `app.Group("/api/v1")` di main.go:87.
   static const String apiPrefix = '/api/v1';
 
   /// Base URL untuk semua REST call — sudah termasuk `/api/v1`.
-  static String get baseUrl => 'http://$host$apiPrefix';
+  static String get baseUrl => environmentConfig.baseUrl;
 
   /// Base URL WebSocket — tanpa `/api/v1`, sesuai `app.Get("/ws/rides/:id")`.
-  static String get wsUrl => 'ws://$host/ws';
+  static String get wsUrl => environmentConfig.wsUrl;
 
   // --- Auth — main.go:90-97 ---
   static const String loginEndpoint = '/auth/login';

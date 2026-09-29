@@ -2,6 +2,8 @@ class RideHistoryItem {
   final String id;
   final String title;
   final String? destName;
+  final double? destLat;
+  final double? destLng;
   final DateTime date;
   final int participantCount;
   final RideRole role;
@@ -13,6 +15,8 @@ class RideHistoryItem {
     required this.id,
     required this.title,
     this.destName,
+    this.destLat,
+    this.destLng,
     required this.date,
     required this.participantCount,
     required this.role,
@@ -29,6 +33,8 @@ class RideHistoryItem {
             (json['name'] as String?) ??
             'Ride tanpa nama',
         destName: json['dest_name'] as String?,
+        destLat: (json['dest_lat'] as num?)?.toDouble(),
+        destLng: (json['dest_lng'] as num?)?.toDouble(),
         date: _parseDate(json['date'] ?? json['created_at']),
         participantCount: json['participant_count'] as int? ?? 0,
         role: _parseRole(json['role']),
@@ -41,6 +47,8 @@ class RideHistoryItem {
     'id': id,
     'title': title,
     if (destName != null) 'dest_name': destName,
+    if (destLat != null) 'dest_lat': destLat,
+    if (destLng != null) 'dest_lng': destLng,
     'date': date.toIso8601String(),
     'participant_count': participantCount,
     'role': role.name,
@@ -53,6 +61,8 @@ class RideHistoryItem {
     String? id,
     String? title,
     String? destName,
+    double? destLat,
+    double? destLng,
     DateTime? date,
     int? participantCount,
     RideRole? role,
@@ -63,6 +73,8 @@ class RideHistoryItem {
     id: id ?? this.id,
     title: title ?? this.title,
     destName: destName ?? this.destName,
+    destLat: destLat ?? this.destLat,
+    destLng: destLng ?? this.destLng,
     date: date ?? this.date,
     participantCount: participantCount ?? this.participantCount,
     role: role ?? this.role,

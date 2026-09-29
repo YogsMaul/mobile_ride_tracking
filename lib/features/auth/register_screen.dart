@@ -184,6 +184,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 controller: _emailController,
                                 decoration: const InputDecoration(
                                   labelText: 'Email',
+                                  helperText: 'Pendaftaran khusus @gmail.com',
                                   prefixIcon: Icon(
                                     Icons.alternate_email,
                                     color: AppColors.muted,
@@ -193,7 +194,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.email],
-                                validator: AppValidators.email,
+                                validator: (v) =>
+                                    AppValidators.email(v, gmailOnly: true),
                               ),
                               const SizedBox(height: AppSpacing.md),
 

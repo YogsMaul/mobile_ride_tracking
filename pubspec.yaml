@@ -48,6 +48,10 @@ dependencies:
   wakelock_plus: ^1.8.0
   shared_preferences: ^2.5.5
   package_info_plus: ^10.2.1
+  device_info_plus: ^13.2.0
+  flutter_compass: ^0.8.1
+  crypto: ^3.0.6
+  cryptography: ^2.7.0
 
 dev_dependencies:
   flutter_test:
@@ -62,13 +66,12 @@ dev_dependencies:
   flutter_native_splash: ^2.4.8
 
 flutter_native_splash:
-  # Warna sama dengan hijau solid logo biar transisi native -> Flutter mulus.
-  color: "#217E56"
+  color: "#FFFFFF"
   image: assets/splash_logo.png
   android: true
   ios: true
   android_12:
-    color: "#217E56"
+    color: "#FFFFFF"
     image: assets/splash_logo.png
 
 # For information on the generic Dart part of this file, see the

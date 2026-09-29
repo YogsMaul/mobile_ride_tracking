@@ -76,6 +76,10 @@ Future<bool> runLeaveOrEndFlow({
   required String rideId,
   required bool isHost,
   required bool isPlanned,
+  double? currentLat,
+  double? currentLng,
+  double? currentSpeed,
+  double? currentHeading,
 }) async {
   String title;
   String content;
@@ -110,7 +114,13 @@ Future<bool> runLeaveOrEndFlow({
       if (isPlanned) {
         await repo.cancelRide(rideId);
       } else {
-        await repo.endRide(rideId);
+        await repo.endRide(
+          rideId,
+          lat: currentLat,
+          lng: currentLng,
+          speed: currentSpeed,
+          heading: currentHeading,
+        );
       }
     } else {
       await repo.leaveRide(rideId);

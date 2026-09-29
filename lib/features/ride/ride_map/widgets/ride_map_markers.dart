@@ -11,6 +11,7 @@ List<Marker> buildRideMarkers({
   LatLng? currentPosition,
   double currentHeading = 0,
   bool currentIsMoving = false,
+  bool showHeadingBeam = false,
   required Map<String, RiderLocation> otherRiders,
   Map<String, String>? names,
   LatLng? destinationPoint,
@@ -38,13 +39,15 @@ List<Marker> buildRideMarkers({
     markers.add(
       Marker(
         point: currentPosition,
-        width: 72,
-        height: 84,
+        width: 90,
+        height: 100,
         child: RiderAvatarMarker(
           label: 'Kamu',
           heading: currentHeading,
           isMoving: currentIsMoving,
           background: AppColors.brand,
+          isMe: true,
+          showBeam: showHeadingBeam,
         ),
       ),
     );
@@ -131,12 +134,16 @@ class RiderAvatarMarker extends StatelessWidget {
     required this.heading,
     required this.isMoving,
     required this.background,
+    this.isMe = false,
+    this.showBeam = false,
   });
 
   final String label;
   final double heading;
   final bool isMoving;
   final Color background;
+  final bool isMe;
+  final bool showBeam;
 
   @override
   Widget build(BuildContext context) {
@@ -144,9 +151,9 @@ class RiderAvatarMarker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.ink,
+            color: isMe ? AppColors.brandDark : AppColors.ink,
             borderRadius: BorderRadius.circular(7),
           ),
           child: Text(
@@ -160,42 +167,75 @@ class RiderAvatarMarker extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 2),
         _Bounce(
           bounce: isMoving,
           child: SizedBox(
-            width: 46,
-            height: 46,
+            width: isMe ? 58 : 46,
+            height: isMe ? 58 : 46,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 if (isMoving) _PulseRing(color: background),
+
+                // Beam sorotan cahaya segitiga arah depan ala Google Maps (khusus saat mode kompas aktif)
+                if (isMe && showBeam)
+                  Transform.rotate(
+                    angle: heading * math.pi / 180,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        width: 44,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              AppColors.brand.withValues(alpha: 0.55),
+                              AppColors.brand.withValues(alpha: 0.0),
+                            ],
+                          ),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.elliptical(44, 28),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Panah segitiga penunjuk arah
                 Transform.rotate(
                   angle: heading * math.pi / 180,
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: isMe ? 52 : 44,
+                    height: isMe ? 52 : 44,
                     alignment: Alignment.topCenter,
                     child: Container(
                       margin: const EdgeInsets.only(top: 1),
                       width: 0,
                       height: 0,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         border: Border(
-                          left: BorderSide(color: Colors.transparent, width: 6),
-                          right: BorderSide(
+                          left: const BorderSide(color: Colors.transparent, width: 6),
+                          right: const BorderSide(
                             color: Colors.transparent,
                             width: 6,
                           ),
-                          bottom: BorderSide(color: Colors.white, width: 8),
+                          bottom: BorderSide(
+                            color: isMe ? AppColors.brandDark : Colors.white,
+                            width: 8,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
+
+                // Lingkaran marker pusat
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: isMe ? 36 : 34,
+                  height: isMe ? 36 : 34,
                   decoration: BoxDecoration(
                     color: background,
                     shape: BoxShape.circle,
@@ -211,7 +251,7 @@ class RiderAvatarMarker extends StatelessWidget {
                   child: const Icon(
                     Icons.two_wheeler,
                     color: Colors.white,
-                    size: 17,
+                    size: 18,
                   ),
                 ),
               ],

@@ -1,10 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/error/app_exception.dart';
@@ -62,16 +62,20 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
   double _myHeading = 0;
   double _mySpeed = 0;
   String? _myUserId;
+  double _targetMapRotation = 0;
+  Timer? _mapRotationTimer;
 
   RideModel? _rideDetail;
   List<RideMember> _members = [];
   bool _isStarting = false;
   bool _followMe = true;
+  bool _headingMode = false;
   Timer? _membersPollTimer;
   Timer? _heartbeatTimer;
 
   StreamSubscription<Map<String, dynamic>>? _wsSubscription;
   StreamSubscription<Position>? _locationSubscription;
+  StreamSubscription<CompassEvent>? _compassSubscription;
 
   late final RideStateNotifier _rideNotifier;
   late final WebSocketManager _ws;
@@ -104,6 +108,19 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     _riders.addListener(_rebuild);
     _dest.addListener(_rebuild);
     _riders.start();
+
+    // Loop animasi 60 FPS (16ms) untuk rotasi peta ultra-smooth ala Google Maps
+    _mapRotationTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      if (!mounted || !_followMe || !_headingMode || _currentPosition == null) return;
+      final curRot = _mapController.camera.rotation;
+      var diff = (_targetMapRotation - curRot + 180) % 360 - 180;
+      if (diff.abs() > 0.1) {
+        // LERP step 0.18 tiap 16ms untuk transisi kamera yang mengalir mulus tanpa patah-patah
+        final nextRot = (curRot + diff * 0.18 + 360) % 360;
+        _mapController.rotate(nextRot);
+      }
+    });
+
     _initRide();
   }
 
@@ -113,10 +130,12 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
 
   @override
   void dispose() {
+    _mapRotationTimer?.cancel();
     _membersPollTimer?.cancel();
     _heartbeatTimer?.cancel();
     _wsSubscription?.cancel();
     _locationSubscription?.cancel();
+    _compassSubscription?.cancel();
     _ws.disconnect();
     _riders.dispose();
     _dest.dispose();
@@ -185,6 +204,26 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       );
     });
 
+    // Sensor Kompas Perangkat: Tangkap target arah hadap & rotasi peta
+    _compassSubscription = FlutterCompass.events?.listen((event) {
+      if (!mounted) return;
+      final heading = event.heading;
+      if (heading != null && _mySpeed < 1.0) {
+        final targetHeading = (heading + 360) % 360;
+        final diff = (targetHeading - _myHeading + 180) % 360 - 180;
+        final absDiff = diff.abs();
+
+        if (absDiff < 0.4) return;
+
+        final factor = absDiff > 15 ? 0.90 : (absDiff > 5 ? 0.65 : 0.40);
+        final smoothedHeading = (_myHeading + diff * factor + 360) % 360;
+
+        _myHeading = smoothedHeading;
+        _targetMapRotation = (-smoothedHeading + 360) % 360;
+        setState(() {});
+      }
+    });
+
     _locationSubscription = locationService.getPositionStream().listen((
       position,
     ) {
@@ -194,9 +233,14 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
         _currentPosition = newPos;
         _myHeading = position.heading;
         _mySpeed = position.speed;
+        if (position.heading >= 0) {
+          _targetMapRotation = (-position.heading + 360) % 360;
+        }
       });
 
-      if (_followMe) _mapController.move(newPos, _mapController.camera.zoom);
+      if (_followMe) {
+        _mapController.move(newPos, _mapController.camera.zoom);
+      }
 
       // Re-route OSRM hanya jika melenceng > 500m dari awal rute saat ini.
       _autoReroute(newPos);
@@ -212,16 +256,34 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
 
   void _autoReroute(LatLng newPos) {
     final route = _dest.routeResult;
-    if (_dest.destPoint != null && route != null && route.points.isNotEmpty) {
-      final dist = const Distance().as(
-        LengthUnit.Meter,
-        route.points.first,
-        newPos,
-      );
-      if (dist > 500) {
-        _dest.refreshRoute(newPos);
+    if (_dest.destPoint == null) return;
+
+    if (route == null || route.points.isEmpty) {
+      _dest.refreshRoute(newPos);
+      return;
+    }
+
+    const distanceCalc = Distance();
+
+    // 1. Cek jarak ke titik awal rute (kalau baru mulai jalan)
+    final distFromStart = distanceCalc.as(
+      LengthUnit.Meter,
+      route.points.first,
+      newPos,
+    );
+
+    // 2. Cek apakah posisi user menyimpang dari segmen jalur (ala off-route detection Google Maps)
+    double minDistanceToRoute = double.infinity;
+    for (int i = 0; i < route.points.length; i++) {
+      final d = distanceCalc.as(LengthUnit.Meter, route.points[i], newPos);
+      if (d < minDistanceToRoute) {
+        minDistanceToRoute = d;
       }
-    } else if (_dest.destPoint != null && route == null) {
+    }
+
+    // Jika user melenceng > 60 meter dari seluruh segmen jalur rute,
+    // atau sudah bergerak > 100m dari titik awal perhitungan lama, hitung ulang rute terdekat.
+    if (minDistanceToRoute > 60 || distFromStart > 100) {
       _dest.refreshRoute(newPos);
     }
   }
@@ -292,7 +354,10 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
         final before = _dest.destName;
         _dest.applyDestination(name, point);
         if (before != name) {
-          _dest.refreshRoute(_currentPosition);
+          _fitRouteBounds(point);
+          _dest.refreshRoute(_currentPosition).then((_) {
+            if (mounted) _fitRouteBounds(point);
+          });
           if (mounted) AppToast.info(context, 'Tujuan diset ke: $name');
         }
       }
@@ -402,6 +467,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       ),
       builder: (_) => RideDestinationSheet(
         isHost: _isHost,
+        userLocation: _currentPosition,
         currentDestName: _dest.destName,
         currentLat: _dest.destPoint?.latitude,
         currentLng: _dest.destPoint?.longitude,
@@ -464,9 +530,13 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       if (!mounted) return;
       if (previewRoute != null) {
         _dest.applyPreview(name, point, previewRoute);
+        _fitRouteBounds(point);
       } else {
         _dest.applyDestination(name, point);
-        _dest.refreshRoute(_currentPosition);
+        _fitRouteBounds(point);
+        _dest.refreshRoute(_currentPosition).then((_) {
+          if (mounted) _fitRouteBounds(point);
+        });
       }
       setState(() {
         if (_rideDetail != null) {
@@ -483,6 +553,51 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
     } catch (e) {
       if (mounted) AppToast.error(context, 'Gagal mengubah tujuan: $e');
     }
+  }
+
+  /// Fit camera agar posisi saat ini + seluruh rute + titik tujuan muat
+  /// di layar seperti tampilan navigasi Google Maps / Gojek.
+  void _fitRouteBounds(LatLng destination) {
+    setState(() => _followMe = false);
+
+    final start = _currentPosition;
+
+    // Jika jarak terlalu jauh (> 150 km) atau GPS berada di negara lain,
+    // langsung fokuskan kamera ke titik tujuan agar tidak zoom out ke seluruh dunia.
+    if (start != null) {
+      final directDistance = const Distance().as(
+        LengthUnit.Kilometer,
+        start,
+        destination,
+      );
+      if (directDistance > 150) {
+        _mapController.move(destination, 15.0);
+        return;
+      }
+    }
+
+    final routePoints = _dest.routeResult?.points ?? _dest.previewRoute?.points;
+
+    final points = <LatLng>[?start, destination, ...?routePoints];
+
+    if (points.length < 2) {
+      _mapController.move(destination, 16.0);
+      return;
+    }
+
+    final bounds = LatLngBounds.fromPoints(points);
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.only(
+          top: 90,
+          bottom: 140,
+          left: 40,
+          right: 40,
+        ),
+        maxZoom: 16.5,
+      ),
+    );
   }
 
   void _showInviteQr() {
@@ -583,6 +698,10 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       rideId: widget.rideId,
       isHost: _isHost,
       isPlanned: _rideStatus == 'planned',
+      currentLat: _currentPosition?.latitude,
+      currentLng: _currentPosition?.longitude,
+      currentSpeed: _mySpeed,
+      currentHeading: _myHeading,
     );
     if (ok && mounted) {
       _permanentLeave = true;
@@ -596,6 +715,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
       currentPosition: _currentPosition,
       currentHeading: _myHeading,
       currentIsMoving: _mySpeed > 0.8,
+      showHeadingBeam: _headingMode,
       otherRiders: _riders.smooth,
       names: _memberNames,
       destinationPoint: _dest.pickedPoint ?? _dest.destPoint,
@@ -652,6 +772,8 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.ridetracking.app',
+                  keepBuffer: 3,
+                  panBuffer: 1,
                 ),
                 if (_dest.previewRoute != null &&
                     _dest.previewRoute!.points.isNotEmpty)
@@ -712,11 +834,7 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
                     isHost: _isHost,
                     onTap: () {
                       if (_dest.destPoint != null) {
-                        setState(() => _followMe = false);
-                        _mapController.move(
-                          _dest.destPoint!,
-                          _mapController.camera.zoom.clamp(14.0, 16.0),
-                        );
+                        _fitRouteBounds(_dest.destPoint!);
                       }
                     },
                     onClear: _handleClearDestination,
@@ -729,18 +847,40 @@ class _RideMapScreenState extends ConsumerState<RideMapScreen> {
               bottom: 14,
               child: RideMapControls(
                 followMe: _followMe,
+                headingMode: _headingMode,
                 hasDestination: _dest.destName != null,
                 destTooltip: _dest.destName != null
                     ? 'Tujuan konvoi'
                     : 'Atur tujuan',
                 onFollowMe: () {
-                  setState(() => _followMe = true);
+                  setState(() {
+                    _followMe = true;
+                  });
                   if (_currentPosition != null) {
-                    _mapController.move(
-                      _currentPosition!,
-                      _mapController.camera.zoom.clamp(14.0, 17.0),
-                    );
+                    final targetZoom = _mapController.camera.zoom.clamp(15.0, 17.5);
+                    if (_headingMode && _myHeading >= 0) {
+                      _mapController.moveAndRotate(_currentPosition!, targetZoom, -_myHeading);
+                    } else {
+                      _mapController.move(_currentPosition!, targetZoom);
+                    }
                   }
+                },
+                onToggleHeadingMode: () {
+                  setState(() {
+                    _headingMode = !_headingMode;
+                    if (_headingMode) {
+                      _followMe = true;
+                      if (_currentPosition != null && _myHeading >= 0) {
+                        _mapController.moveAndRotate(
+                          _currentPosition!,
+                          _mapController.camera.zoom.clamp(15.0, 17.5),
+                          -_myHeading,
+                        );
+                      }
+                    } else {
+                      _mapController.rotate(0);
+                    }
+                  });
                 },
                 onZoomIn: () => _mapController.move(
                   _mapController.camera.center,

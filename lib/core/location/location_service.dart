@@ -21,8 +21,8 @@ class LocationService {
 
   Stream<Position> getPositionStream() {
     const locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 5,
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 1,
     );
     return Geolocator.getPositionStream(locationSettings: locationSettings);
   }

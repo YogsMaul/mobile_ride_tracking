@@ -6,18 +6,22 @@ class RideMapControls extends StatelessWidget {
   const RideMapControls({
     super.key,
     required this.followMe,
+    this.headingMode = false,
     required this.hasDestination,
     required this.destTooltip,
     required this.onFollowMe,
+    this.onToggleHeadingMode,
     required this.onZoomIn,
     required this.onZoomOut,
     required this.onShowDestination,
   });
 
   final bool followMe;
+  final bool headingMode;
   final bool hasDestination;
   final String destTooltip;
   final VoidCallback onFollowMe;
+  final VoidCallback? onToggleHeadingMode;
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final VoidCallback onShowDestination;
@@ -28,13 +32,30 @@ class RideMapControls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         MapFabButton(
-          tooltip: followMe ? 'Ikuti saya: ON' : 'Ikuti saya',
-          icon: followMe
-              ? Icons.my_location_rounded
-              : Icons.location_searching_rounded,
-          active: followMe,
+          tooltip: headingMode
+              ? 'Mode Navigasi (Putar Peta): AKTIF'
+              : (followMe ? 'Ikuti Saya (Utara di Atas)' : 'Pusatkan ke Saya'),
+          icon: headingMode
+              ? Icons.navigation_rounded
+              : (followMe
+                  ? Icons.my_location_rounded
+                  : Icons.location_searching_rounded),
+          active: followMe || headingMode,
           onTap: onFollowMe,
         ),
+        if (followMe) ...[
+          const SizedBox(height: 10),
+          MapFabButton(
+            tooltip: headingMode
+                ? 'Kunci Arah Utara'
+                : 'Putar Peta Sesuai Arah Kendaraan (Navigasi)',
+            icon: headingMode
+                ? Icons.explore_rounded
+                : Icons.explore_off_rounded,
+            active: headingMode,
+            onTap: onToggleHeadingMode ?? () {},
+          ),
+        ],
         const SizedBox(height: 10),
         MapFabButton(
           tooltip: 'Zoom in',

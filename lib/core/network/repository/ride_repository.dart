@@ -98,9 +98,21 @@ class RideRepository {
   }
 
   /// POST /rides/:id/end — owner selesaikan ride.
-  Future<void> endRide(String rideId) async {
+  Future<void> endRide(
+    String rideId, {
+    double? lat,
+    double? lng,
+    double? speed,
+    double? heading,
+  }) async {
     try {
-      await service.endRide(rideId);
+      await service.endRide(
+        rideId,
+        lat: lat,
+        lng: lng,
+        speed: speed,
+        heading: heading,
+      );
     } on DioException catch (e) {
       throw AppException.fromDio(e);
     }

@@ -5,11 +5,28 @@ class SecureStorageService {
   static const _kAccessToken = 'access_token';
   static const _kRefreshToken = 'refresh_token';
   static const _kUserId = 'user_id';
+  static const _kDeviceRegistered = 'device_registered';
+  static const _kHmacKey = 'hmac_key';
+  static const _kPrivateKey = 'private_key';
+  static const _kPublicKey = 'public_key';
+  static const _kDeviceId = 'device_id';
+
+  static const _androidOptions = AndroidOptions(
+    migrateOnAlgorithmChange: true,
+  );
+  static const _iosOptions = IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock,
+  );
 
   final FlutterSecureStorage _storage;
 
   const SecureStorageService([FlutterSecureStorage? storage])
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            aOptions: _androidOptions,
+            iOptions: _iosOptions,
+          );
 
   Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
 
@@ -45,4 +62,20 @@ class SecureStorageService {
     await _storage.delete(key: _kRefreshToken);
     await _storage.delete(key: _kUserId);
   }
+
+  Future<String?> getDeviceRegistered() => _storage.read(key: _kDeviceRegistered);
+  Future<void> saveDeviceRegistered(String value) => _storage.write(key: _kDeviceRegistered, value: value);
+  Future<void> deleteDeviceRegistered() => _storage.delete(key: _kDeviceRegistered);
+
+  Future<String?> getHmacKey() => _storage.read(key: _kHmacKey);
+  Future<void> saveHmacKey(String value) => _storage.write(key: _kHmacKey, value: value);
+
+  Future<String?> getPrivateKey() => _storage.read(key: _kPrivateKey);
+  Future<void> savePrivateKey(String value) => _storage.write(key: _kPrivateKey, value: value);
+
+  Future<String?> getPublicKey() => _storage.read(key: _kPublicKey);
+  Future<void> savePublicKey(String value) => _storage.write(key: _kPublicKey, value: value);
+
+  Future<String?> getDeviceId() => _storage.read(key: _kDeviceId);
+  Future<void> saveDeviceId(String value) => _storage.write(key: _kDeviceId, value: value);
 }

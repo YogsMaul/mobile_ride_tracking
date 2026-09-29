@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../core/network/service/route_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class RideDestinationSheet extends StatefulWidget {
   final bool isHost;
+  final LatLng? userLocation;
   final String? currentDestName;
   final double? currentLat;
   final double? currentLng;
@@ -20,6 +22,7 @@ class RideDestinationSheet extends StatefulWidget {
   const RideDestinationSheet({
     super.key,
     required this.isHost,
+    this.userLocation,
     this.currentDestName,
     this.currentLat,
     this.currentLng,
@@ -60,7 +63,10 @@ class _RideDestinationSheetState extends State<RideDestinationSheet> {
     }
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       setState(() => _isSearching = true);
-      final places = await _routeService.searchPlaces(query);
+      final places = await _routeService.searchPlaces(
+        query,
+        userLocation: widget.userLocation,
+      );
       if (mounted) {
         setState(() {
           _results = places;

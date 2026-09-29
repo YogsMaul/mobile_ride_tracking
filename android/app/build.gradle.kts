@@ -15,6 +15,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    buildFeatures {
+        resValues = true
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.ridetracking.ride_tracking_mobile"
@@ -35,6 +39,22 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    flavorDimensions += "default"
+    productFlavors {
+        create("dev") {
+            dimension = "default"
+            resValue("string", "app_name", "Ride Tracker (Dev)")
+        }
+        create("staging") {
+            dimension = "default"
+            resValue("string", "app_name", "Ride Tracker (Staging)")
+        }
+        create("prod") {
+            dimension = "default"
+            resValue("string", "app_name", "Ride Tracker")
         }
     }
 }
